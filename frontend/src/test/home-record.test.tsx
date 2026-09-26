@@ -17,10 +17,11 @@ describe('Patient home', () => {
 
   it('prompts to connect MyChart and shows the latest symptom notes', async () => {
     renderApp('/')
-    expect(await screen.findByRole('heading', { name: /connect your mychart/i })).toBeInTheDocument()
-    const notes = screen.getByRole('heading', { name: /symptom notes/i }).closest('section')!
+    const hero = (await screen.findByRole('heading', { name: /welcome back, maya/i })).closest('section')!
+    expect(within(hero).getByText(/mychart not connected/i)).toBeInTheDocument()
+    expect(within(hero).getByRole('link', { name: /connect mychart/i })).toHaveAttribute('href', '/record')
+    const notes = screen.getByRole('heading', { name: /^symptom notes/i }).closest('section')!
     expect(within(notes).getByText(/fatigue/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /connect mychart/i })).toHaveAttribute('href', '/record')
   })
 })
 

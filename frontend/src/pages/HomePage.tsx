@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { Alert, Card, CardLink, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Alert, Card, CardLink, DataSourceNote, Loading } from '../components/common'
 import { Icon } from '../components/Icon'
-import { MyChartCard } from '../components/MyChartCard'
 import { attentionItems, isComplete, journeySteps } from '../lib/journey'
 import { careTeam, groupEvents, providerLookup } from '../lib/record'
 import { journeyAppointmentDate, journeyProviderId } from '../lib/providers'
@@ -39,27 +38,35 @@ export function HomePage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="HERA overview"
-        title={`Welcome back, ${firstName}`}
-        lede={
-          connected ? (
+      <section className="hero" aria-labelledby="hero-h">
+        <DataSourceNote source={record.source} />
+        <div className="eyebrow">Your HERA overview</div>
+        <h1 className="hero-title" id="hero-h">Welcome back, {firstName}</h1>
+        <p className="hero-lede">
+          {connected ? (
             <>
               HERA has connected <strong>{g.encounter.length} visits</strong> with <strong>{team.length} clinicians</strong>
               {firstVisit && <> since {formatDate(firstVisit.event_date, { year: true })}</>} into one health story, so nothing gets lost between appointments.
             </>
           ) : (
-            'Connect MyChart to bring your visits, labs and referrals from every health system into one place.'
-          )
-        }
-        actions={<DataSourceNote source={record.source} />}
-      />
-
-      {!connected && (
-        <div style={{ marginBottom: 24 }}>
-          <MyChartCard connection={mychart.data} />
+            'Connect MyChart to bring your visits, labs and referrals from every health system into one place, then find care you can actually reach.'
+          )}
+        </p>
+        <div className="hero-stats">
+          <HeroStat value={connected ? String(g.encounter.length) : '—'} label={connected ? 'Visits connected' : 'MyChart not connected'} />
+          <HeroStat value={String(active.length)} label={`Care ${active.length === 1 ? 'need' : 'needs'} in progress`} />
+          <HeroStat value={upcoming[0] ? formatDate(upcoming[0].date) : 'None'} label={upcoming[0] ? 'Next appointment' : 'Appointment booked'} />
+          <HeroStat value={String(symptoms.data.length)} label="Symptom notes" />
         </div>
-      )}
+        <div className="hero-actions">
+          {connected ? (
+            <Link to="/access" className="btn btn-primary">Find care options</Link>
+          ) : (
+            <Link to="/record" className="btn btn-primary"><Icon name="link" size={16} /> Connect MyChart</Link>
+          )}
+          <Link to="/symptoms" className="btn btn-secondary">Log a symptom</Link>
+        </div>
+      </section>
 
       {attention.length > 0 && (
         <section aria-labelledby="attention-h" className="stack-sm" style={{ marginBottom: 24 }}>
@@ -195,5 +202,14 @@ export function HomePage() {
         </div>
       </div>
     </>
+  )
+}
+
+function HeroStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="hero-stat">
+      <div className="hero-stat-value num">{value}</div>
+      <div className="hero-stat-label">{label}</div>
+    </div>
   )
 }

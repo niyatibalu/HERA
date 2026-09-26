@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { ProviderMatch } from '../types'
 import { Icon } from './Icon'
 import { formatCurrency, humanize, specialtyLabel } from '../lib/format'
@@ -34,7 +34,7 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
           </div>
         </div>
         {!isOriginal && (
-          <div className="match-score" aria-label={`Match score ${Math.round(match.score)} out of 100`}>
+          <div className="match-score" style={{ '--score': Math.round(match.score) } as CSSProperties} aria-label={`Match score ${Math.round(match.score)} out of 100`}>
             <span className="num">{Math.round(match.score)}</span>
             <small>match</small>
           </div>
