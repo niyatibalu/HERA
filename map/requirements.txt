@@ -1,0 +1,2 @@
+# The access map uses only the Python standard library. This file exists so
+# hosting platforms (Railway/Railpack) detect a Python service.
