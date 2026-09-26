@@ -34,19 +34,17 @@ describe('API client (live backend)', () => {
     expect(calls).toEqual(['/patients/maya-001', '/patients/maya-001/health-events', '/patients/maya-001/providers?specialty=chronic_pelvic_pain'])
   })
 
-  it('pins trend flags to the demo date and joins study titles', async () => {
+  it('joins study titles onto study matches', async () => {
     const urls: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       urls.push(url)
-      if (url.includes('/trend-flags')) return json([])
       if (url.endsWith('/study-matches')) return json([{ study_id: 'study-a', candidate_id: 'c-1', eligibility_status: 'potentially_eligible', criteria_satisfied: [], criteria_unknown: [], reason: 'r' }])
       if (url.endsWith('/studies')) return json([{ study_id: 'study-a', title: 'Chronic Pelvic Pain Study', description: 'd' }])
       return json({}, 404)
     }))
     const api = await loadClient()
-    await api.getFlags('maya-001')
-    expect(urls[0]).toBe('http://api.test/patients/maya-001/trend-flags?as_of=2025-12-17')
     const m = await api.getStudyMatches('maya-001')
+    expect(urls[0]).toBe('http://api.test/patients/maya-001/study-matches')
     expect(m.data[0].title).toBe('Chronic Pelvic Pain Study')
   })
 

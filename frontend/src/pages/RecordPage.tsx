@@ -2,13 +2,28 @@ import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { ConnectedRecordCard, ConnectedSources } from '../components/ConnectedRecordCard'
 import { Alert, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { MyChartCard } from '../components/MyChartCard'
 import { careTeam, conditions, groupEvents, providerLookup } from '../lib/record'
 import { formatDate, humanize, specialtyLabel } from '../lib/format'
 import type { HealthEvent } from '../types'
 
 export function RecordPage() {
   const { data: r, source } = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
-  if (!r) return <Loading label="Loading connected records…" />
+  const mychart = useApi(() => api.getMyChart(DEMO_PATIENT_ID), 'mychart')
+  if (!r || !mychart.data) return <Loading label="Loading connected records…" />
+
+  if (mychart.data.status !== 'connected') {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Unified health record"
+          title="Connected health records"
+          lede="Connect MyChart once and HERA brings your visits, conditions, medications, labs and referrals from every health system into one record that each new clinician can see."
+        />
+        <MyChartCard connection={mychart.data} />
+      </>
+    )
+  }
 
   const provider = providerLookup(r.providers)
   const g = groupEvents(r.events)
@@ -26,9 +41,12 @@ export function RecordPage() {
         actions={<DataSourceNote source={source} />}
       />
 
-      <Alert tone="info" title="Simulated record connection">
-        This demo uses a fictional patient and a simulated EHR / patient-portal connection. HERA does not access any real MyChart or hospital data.
-      </Alert>
+      <div className="stack">
+        <MyChartCard connection={mychart.data} />
+        <Alert tone="info" title="Simulated record connection">
+          This demo uses a fictional patient and a simulated MyChart connection. HERA does not access any real MyChart or hospital data.
+        </Alert>
+      </div>
 
       <div className="grid grid-4 section-gap">
         <Stat label="Visits" value={g.encounter.length} note={`${team.length} clinicians · ${new Set(g.encounter.map((e) => e.specialty)).size} specialties`} />

@@ -57,6 +57,59 @@ export interface Provider {
   accessibility_features: string[]
   languages: string[]
   expertise_tags: string[]
+  gender?: 'female' | 'male' | 'nonbinary' | null
+  /** 0-5, from synthetic patient reviews. */
+  rating?: number | null
+  review_count?: number
+  review_highlights?: string[]
+  availability?: AvailabilitySlot[]
+  sliding_scale?: boolean
+}
+
+export type AvailabilitySlot = 'weekday_morning' | 'weekday_afternoon' | 'weekday_evening' | 'weekend'
+
+/** GET/PUT /patients/{id}/preferences. Unset preferences never penalize a provider. */
+export interface CarePreferences {
+  patient_id: string
+  max_cost_usd?: number | null
+  needs_financial_assistance: boolean
+  /** null = the plan on the patient record */
+  insurance_plan?: string | null
+  max_distance_mi?: number | null
+  expertise: string[]
+  min_rating?: number | null
+  availability: AvailabilitySlot[]
+  telehealth: 'no_preference' | 'prefer_telehealth' | 'in_person_only'
+  provider_gender: 'no_preference' | 'female' | 'male' | 'nonbinary'
+  updated_at?: IsoDate | null
+}
+
+/** GET/POST /patients/{id}/symptom-log. The patient's own notes; never analyzed. */
+export interface SymptomLogEntry {
+  entry_id: string
+  patient_id: string
+  logged_on: IsoDate
+  symptom: string
+  /** 0-10, patient-rated */
+  severity: number
+  timing: 'before_visit' | 'after_visit' | 'general'
+  visit?: string | null
+  note: string
+  tags: string[]
+}
+
+export type NewSymptomLogEntry = Pick<SymptomLogEntry, 'symptom' | 'severity' | 'timing' | 'note'> & { visit?: string | null }
+
+/** GET /patients/{id}/mychart. Always simulated: no real MyChart/Epic system is contacted. */
+export interface MyChartConnection {
+  patient_id: string
+  status: 'not_connected' | 'connected'
+  simulated: boolean
+  connected_at?: IsoDate | null
+  last_synced_at?: IsoDate | null
+  scopes: string[]
+  organizations: { name: string; system_type: RecordSource['system_type'] }[]
+  imported: Partial<Record<EventType, number>>
 }
 
 /** FRONTEND: presentation of the systems a record was assembled from (simulated). */
@@ -75,39 +128,6 @@ export interface PatientRecord {
   events: HealthEvent[]
   providers: Provider[]
   record_sources?: RecordSource[]
-}
-
-// ---------- trends.py ----------
-
-export type PatternType =
-  | 'persistent_symptom'
-  | 'lab_trend'
-  | 'repeated_treatment_no_improvement'
-  | 'multiple_specialist_visits'
-  | 'unresolved_referral'
-  | 'care_gap'
-
-export type Trend = 'worsening' | 'stable' | 'improving' | 'unknown'
-
-export interface Evidence {
-  event_id: string
-  event_date: IsoDate
-  excerpt: string
-}
-
-export interface TrendFlag {
-  flag_id: string
-  patient_id: string
-  pattern_type: PatternType
-  topic: string
-  first_seen: IsoDate
-  last_seen: IsoDate
-  encounter_count: number
-  trend: Trend
-  evidence: Evidence[]
-  message: string
-  action: string
-  generated_at: IsoDate
 }
 
 // ---------- care.py ----------

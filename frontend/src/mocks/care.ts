@@ -48,42 +48,42 @@ export const mockJourneys: CareJourney[] = [
  */
 export const ORIGINAL_REFERRAL_PROVIDER_ID = 'prov-original-specialist'
 
-const PLAN = 'MidwestCare PPO'
 
 /**
- * Mirrors GET /patients/maya-001/providers?specialty=chronic_pelvic_pain: every provider, ranked,
+ * Mirrors GET /patients/maya-001/providers?specialty=chronic_pelvic_pain with Maya's seeded preferences
+ * (backend/app/data/store.py): every provider, ranked,
  * scored with the backend's weights (backend/app/engine/matching.py).
  */
 export const mockProviderMatches: ProviderMatch[] = [
   {
-    provider: byId('prov-alt-best'), score: 92.3, distance_mi: 1.7,
-    match_reasons: ['Specialty match: chronic pelvic pain', `In-network for ${PLAN}`, 'Short wait: 12 days', 'Close to home: 1.7 mi', 'Telehealth available', 'Speaks es'],
+    provider: byId('prov-alt-best'), score: 91.9, distance_mi: 1.7,
+    match_reasons: ['Specialty match: chronic pelvic pain', 'In-network for MidwestCare PPO', 'Short wait: 12 days', 'Close to home: 1.7 mi', 'Within your budget: $95 per visit', 'Offers sliding-scale fees / financial assistance', 'Telehealth available', 'Speaks es', 'Expertise you asked for: chronic pelvic pain', 'Rated 4.8/5 by 126 patients', 'Has appointments when you\'re free: weekday afternoons, weekday evenings', 'Matches your preference for a female clinician'],
     access_tradeoffs: [],
   },
   {
-    provider: byId('prov-alt-telehealth'), score: 75.9, distance_mi: 71.0,
-    match_reasons: ['Relevant expertise: chronic pelvic pain', `In-network for ${PLAN}`, 'Short wait: 6 days', 'Telehealth available'],
-    access_tradeoffs: ['Far from home: 71.0 mi', 'No confirmed es language support'],
+    provider: byId('prov-alt-telehealth'), score: 77.8, distance_mi: 71.0,
+    match_reasons: ['Relevant expertise: chronic pelvic pain', 'In-network for MidwestCare PPO', 'Short wait: 6 days', 'Within your budget: $70 per visit', 'Offers sliding-scale fees / financial assistance', 'Telehealth available', 'Expertise you asked for: chronic pelvic pain', 'Rated 4.7/5 by 97 patients', 'Has appointments when you\'re free: weekday evenings', 'Matches your preference for a female clinician'],
+    access_tradeoffs: ['Beyond your 30 mi travel limit (71.0 mi)', 'No confirmed es language support'],
   },
   {
-    provider: byId('prov-pcp-01'), score: 75.0, distance_mi: 0,
-    match_reasons: [`In-network for ${PLAN}`, 'Short wait: 3 days', 'Close to home: 0.0 mi', 'Telehealth available', 'Speaks es'],
-    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is primary care)'],
+    provider: byId('prov-pcp-01'), score: 74.6, distance_mi: 0.0,
+    match_reasons: ['In-network for MidwestCare PPO', 'Short wait: 3 days', 'Close to home: 0.0 mi', 'Within your budget: $40 per visit', 'Offers sliding-scale fees / financial assistance', 'Telehealth available', 'Speaks es', 'Has appointments when you\'re free: weekday afternoons', 'Matches your preference for a female clinician'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is primary care)', 'No listed expertise in chronic pelvic pain, endometriosis'],
   },
   {
-    provider: byId('prov-obgyn-01'), score: 72.1, distance_mi: 0.7,
-    match_reasons: [`In-network for ${PLAN}`, 'Short wait: 5 days', 'Close to home: 0.7 mi', 'Telehealth available'],
-    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is obgyn)', 'No confirmed es language support'],
+    provider: byId('prov-obgyn-01'), score: 74.2, distance_mi: 0.7,
+    match_reasons: ['In-network for MidwestCare PPO', 'Short wait: 5 days', 'Close to home: 0.7 mi', 'Within your budget: $150 per visit', 'Telehealth available', 'Rated 4.6/5 by 143 patients', 'Has appointments when you\'re free: weekday afternoons', 'Matches your preference for a female clinician'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is obgyn)', 'No sliding-scale or financial assistance program listed', 'No confirmed es language support', 'No listed expertise in chronic pelvic pain, endometriosis'],
   },
   {
-    provider: byId('prov-alt-ok'), score: 67.2, distance_mi: 6.1,
-    match_reasons: [`In-network for ${PLAN}`, 'Close to home: 6.1 mi', 'Telehealth available'],
-    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is gynecology)', 'No confirmed es language support'],
+    provider: byId('prov-alt-ok'), score: 60.1, distance_mi: 6.1,
+    match_reasons: ['In-network for MidwestCare PPO', 'Close to home: 6.1 mi', 'Within your budget: $140 per visit', 'Telehealth available'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is gynecology)', 'No sliding-scale or financial assistance program listed', 'No confirmed es language support', 'No listed expertise in chronic pelvic pain, endometriosis', 'No appointments at the times you said you\'re free', 'Not a female clinician (your preference)'],
   },
   {
-    provider: byId('prov-original-specialist'), score: 36.6, distance_mi: 122.3,
-    match_reasons: ['Specialty match: chronic pelvic pain'],
-    access_tradeoffs: [`Out of network for ${PLAN}`, 'Long wait: 61 days', 'Far from home: 122.3 mi', 'High estimated cost: $420', 'No confirmed es language support'],
+    provider: byId('prov-original-specialist'), score: 43.5, distance_mi: 122.3,
+    match_reasons: ['Specialty match: chronic pelvic pain', 'Expertise you asked for: chronic pelvic pain, endometriosis', 'Rated 4.9/5 by 212 patients', 'Matches your preference for a female clinician'],
+    access_tradeoffs: ['Out of network for MidwestCare PPO', 'Long wait: 61 days', 'Beyond your 30 mi travel limit (122.3 mi)', 'Above your $150 budget: $420 per visit', 'No sliding-scale or financial assistance program listed', 'No confirmed es language support', 'No appointments at the times you said you\'re free'],
   },
 ]
 
