@@ -8,11 +8,16 @@ import unittest
 
 from fastapi.testclient import TestClient
 
+from app.data.store import store
 from app.main import app
 
 
 class TestHeraApi(unittest.TestCase):
     def setUp(self):
+        # `store` is a module-level singleton shared by every route, so
+        # without a reset, one test's journey/consent mutations would leak
+        # into the next (they run alphabetically, not in written order).
+        store.reset()
         self.client = TestClient(app)
 
     def test_health_check(self):
@@ -69,6 +74,42 @@ class TestHeraApi(unittest.TestCase):
         self.assertEqual(after[0]["study_id"], "study-a")
         self.assertEqual(after[0]["eligibility_status"], "potentially_eligible")
         self.assertNotIn("maya-001", after[0]["candidate_id"])
+
+    def test_seeded_maya_journey_starts_with_original_provider(self):
+        journeys = self.client.get("/patients/maya-001/care-journeys").json()
+        self.assertEqual(journeys[0]["provider_id"], "prov-original-specialist")
+        self.assertEqual(journeys[0]["state_history"][0]["entered_at"], "2025-12-08")
+
+    def test_advance_accepts_provider_id_and_appointment_date(self):
+        journey_id = self.client.get("/patients/maya-001/care-journeys").json()[0]["journey_id"]
+        resp = self.client.post(
+            f"/patients/maya-001/care-journeys/{journey_id}/advance",
+            json={
+                "state": "appointment_scheduled",
+                "note": "Re-matched by HERA to Dr. Ifeoma Okafor",
+                "provider_id": "prov-alt-best",
+                "appointment_date": "2025-12-29",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["provider_id"], "prov-alt-best")
+        self.assertEqual(body["appointment_date"], "2025-12-29")
+
+    def test_advance_with_only_state_and_note_still_works(self):
+        # backward compatibility: a caller that never sends provider_id/
+        # appointment_date must keep working exactly as before.
+        journey_id = self.client.get("/patients/maya-001/care-journeys").json()[0]["journey_id"]
+        resp = self.client.post(
+            f"/patients/maya-001/care-journeys/{journey_id}/advance",
+            json={"state": "provider_matched", "note": "matched"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["state"], "provider_matched")
+        # provider_id was already seeded -- confirms omitting the field
+        # doesn't wipe it out
+        self.assertEqual(body["provider_id"], "prov-original-specialist")
 
     def test_invalid_lifecycle_transition_returns_400(self):
         journeys = self.client.get("/patients/patient-002/care-journeys").json()

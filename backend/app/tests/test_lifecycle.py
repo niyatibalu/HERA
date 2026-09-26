@@ -57,6 +57,28 @@ class TestCareLifecycleEngine(unittest.TestCase):
         self.assertFalse(j.stalled)
         self.assertIsNone(j.stalled_reason)
 
+    def test_start_journey_accepts_initial_provider_id(self):
+        j = self.engine.start_journey(
+            "j-1", "maya-001", "specialist eval", date(2025, 12, 8),
+            provider_id="prov-original-specialist",
+        )
+        self.assertEqual(j.provider_id, "prov-original-specialist")
+
+    def test_advance_sets_provider_id_and_appointment_date(self):
+        j = self.engine.start_journey("j-1", "maya-001", "specialist eval", date(2025, 12, 1))
+        self.engine.advance(
+            j, CareState.APPOINTMENT_SCHEDULED, date(2025, 12, 10),
+            provider_id="prov-alt-best", appointment_date=date(2025, 12, 22),
+        )
+        self.assertEqual(j.provider_id, "prov-alt-best")
+        self.assertEqual(j.appointment_date, date(2025, 12, 22))
+
+    def test_advance_without_provider_id_leaves_existing_value_untouched(self):
+        j = self.engine.start_journey("j-1", "maya-001", "specialist eval", date(2025, 12, 1),
+                                       provider_id="prov-original-specialist")
+        self.engine.advance(j, CareState.PROVIDER_MATCHED, date(2025, 12, 5))
+        self.assertEqual(j.provider_id, "prov-original-specialist")  # not wiped to None
+
 
 if __name__ == "__main__":
     unittest.main()
