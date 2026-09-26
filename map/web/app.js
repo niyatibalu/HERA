@@ -125,7 +125,109 @@
     const url = new URL(location.href)
     url.searchParams.set('provider_id', providerId)
     history.replaceState(null, '', url)
-    if (window.HERA_onProviderSelected) window.HERA_onProviderSelected(pr)
+    loadRoutes(providerId)
+  }
+
+  // ---------- routes ----------
+  const MODE_COLOR = { fastest: '--r-fastest', safer: '--r-safer', transit: '--r-transit' }
+  const FACTOR_LABEL = {
+    travel_time_score: 'Travel time', weather_score: 'Weather', road_condition_score: 'Road condition',
+    construction_score: 'Construction', road_type_score: 'Road type', isolation_score: 'Isolation',
+    healthcare_proximity_score: 'Healthcare nearby', accessibility_score: 'Accessibility',
+    mobility_fit_score: 'Mobility fit', transit_service_score: 'Transit service',
+  }
+  const routeLayer = L.layerGroup().addTo(map)
+  const RISKY = /snow|sleet|ice|freezing|unplowed|closure|construction|no services|not step-free/i
+  let routeReq = 0
+
+  async function loadRoutes(providerId) {
+    const req = ++routeReq
+    $('routes-block').hidden = false
+    $('route-list').innerHTML = '<p class="hint">Scoring routes…</p>'
+    routeLayer.clearLayers()
+    let data
+    try {
+      const q = new URLSearchParams({ patient_id: PATIENT_ID, provider_id: providerId })
+      if (JOURNEY_ID) q.set('journey_id', JOURNEY_ID)
+      for (const k of ['weights', 'scenario', 'date']) if (params.get(k)) q.set(k, params.get(k))
+      data = await getJSON(`/routes?${q}`)
+    } catch (e) {
+      if (req === routeReq) $('route-list').innerHTML = `<p class="error">Could not load routes: ${esc(e.message || e)}</p>`
+      return
+    }
+    if (req !== routeReq) return // a newer selection won
+    state.routes = data
+    const rec = data.options.find((o) => o.recommended) || data.options[0]
+    state.selectedRoute = rec?.route_id
+    $('routes-sub').textContent = `To ${data.destination} · appointment ${data.appointment_date}`
+    $('disclaimer').textContent = data.disclaimer
+    renderRoutes()
+    renderConditions(data.conditions)
+  }
+
+  function renderRoutes() {
+    const data = state.routes
+    routeLayer.clearLayers()
+    const drawn = []
+    // Draw unselected first so the selected route sits on top.
+    const ordered = [...data.options].sort((a, b) => (a.route_id === state.selectedRoute) - (b.route_id === state.selectedRoute))
+    for (const o of ordered) {
+      if (!o.geometry.length) continue
+      const on = o.route_id === state.selectedRoute
+      const color = css(MODE_COLOR[o.mode] || '--muted')
+      if (on) L.polyline(o.geometry, { color: '#fff', weight: 10, opacity: 0.9 }).addTo(routeLayer)
+      L.polyline(o.geometry, { color, weight: on ? 6 : 4, opacity: on ? 1 : 0.55, dashArray: o.mode === 'transit' ? '2 8' : null })
+        .bindTooltip(`<b>${esc(o.label)}</b><br>${esc(o.name)} · ${o.duration_minutes} min`, { sticky: true })
+        .on('click', () => selectRoute(o.route_id))
+        .addTo(routeLayer)
+      drawn.push(...o.geometry)
+    }
+    if (drawn.length) map.fitBounds(L.latLngBounds(drawn), { padding: [40, 40], maxZoom: 15 })
+
+    $('route-list').innerHTML = data.options
+      .map((o) => {
+        const on = o.route_id === state.selectedRoute
+        const time = o.duration_minutes != null ? `${o.duration_minutes} <small>min</small>` : '<small>No travel</small>'
+        const factors = Object.entries(o.factor_scores || {})
+          .map(([k, v]) => `<div class="factor"><span>${esc(FACTOR_LABEL[k] || k)}</span><span class="bar"><span style="width:${Math.round(v * 100)}%"></span></span><span class="factor-val">${Math.round(v * 100)}</span></div>`)
+          .join('')
+        return `<button type="button" class="route ${o.recommended ? 'is-recommended' : ''}" role="radio" aria-checked="${on}" data-id="${esc(o.route_id)}" style="--mode-color:${css(MODE_COLOR[o.mode] || '--line')}">
+          <div class="route-top"><span class="route-label">${esc(o.label)}</span>${o.recommended ? '<span class="badge rec">Recommended</span>' : o.suggested ? '<span class="badge rec">Suggested</span>' : o.score != null ? `<span class="score">score ${Math.round(o.score)}</span>` : ''}</div>
+          <div class="route-time">${time}${o.distance_mi ? ` <small>· ${o.distance_mi} mi</small>` : ''}</div>
+          <div class="route-summary">${esc(o.name)}${o.weather_risk !== 'none' ? ` · weather risk: ${esc(o.weather_risk)}` : ''}${o.mode !== 'telehealth' && o.mode !== 'transit' ? ` · construction: ${o.construction ? 'yes' : 'none reported'}` : ''}</div>
+          <div class="conds">${o.conditions.map((c) => `<span class="badge ${RISKY.test(c) ? 'risk' : /major roads|passes|step-free|no travel/i.test(c) ? 'ok' : ''}">${esc(c)}</span>`).join('')}</div>
+          ${on && o.reasons.length ? `<ul class="reasons">${o.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+          ${on && o.cautions.length ? `<ul class="reasons">${o.cautions.map((r) => `<li class="error">${esc(r)}</li>`).join('')}</ul>` : ''}
+          ${on && factors ? `<div class="factors" aria-label="Factor scores">${factors}</div>` : ''}
+        </button>`
+      })
+      .join('')
+    for (const b of $('route-list').querySelectorAll('.route')) b.addEventListener('click', () => selectRoute(b.dataset.id))
+  }
+
+  function selectRoute(routeId) {
+    state.selectedRoute = routeId
+    renderRoutes()
+  }
+
+  const condLayer = L.layerGroup().addTo(map)
+  function renderConditions(cond) {
+    condLayer.clearLayers()
+    if (!cond) return
+    for (const z of cond.weather || []) {
+      L.circle([z.lat, z.lon], { radius: z.radius_mi * 1609.34, color: '#7aa7d9', weight: 1, fillColor: '#9cc3ee', fillOpacity: 0.12 + z.severity * 0.18, interactive: false }).addTo(condLayer)
+      L.marker([z.lat, z.lon], { icon: L.divIcon({ className: '', html: `<span class="badge">❄ ${esc(z.label)}</span>`, iconSize: null }) }).addTo(condLayer)
+    }
+    for (const e of cond.road_events || []) {
+      const color = e.kind === 'closure' ? '#b3261e' : e.kind === 'construction' ? '#d9822b' : '#9a5b00'
+      L.circleMarker([e.lat, e.lon], { radius: 7, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 })
+        .bindTooltip(`<b>${esc(humanize(e.kind))}</b><br>${esc(e.label)}${e.delay_minutes ? `<br>+${e.delay_minutes} min delay` : ''}`)
+        .addTo(condLayer)
+    }
+    const chip = document.getElementById('cond-chip')
+    const text = `${cond.summary}`
+    if (chip) chip.textContent = text
+    else if (cond.scenario !== 'clear') $('status-chips').insertAdjacentHTML('beforeend', `<span class="chip warn" id="cond-chip">${esc(text)}</span>`)
   }
 
   async function init() {

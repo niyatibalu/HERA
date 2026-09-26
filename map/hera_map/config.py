@@ -42,3 +42,8 @@ HOST = os.environ.get("HERA_MAP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("HERA_MAP_PORT", "8001"))
 BACKEND_TIMEOUT_S = float(os.environ.get("HERA_BACKEND_TIMEOUT_S", "1.5"))
 LIVE_TIMEOUT_S = float(os.environ.get("HERA_LIVE_TIMEOUT_S", "2.5"))
+
+
+def demo_today() -> str:
+    """'Today' for the demo story; matches frontend DEMO_TODAY so appointment dates line up."""
+    return os.environ.get("HERA_DEMO_TODAY", "2025-12-17").strip() or "2025-12-17"

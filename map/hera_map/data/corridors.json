@@ -1,0 +1,128 @@
+{
+  "_comment": "SYNTHETIC route corridors for the demo. Waypoints approximate real roads so the map reads correctly, but road classes, transit schedules and timings are illustrative. Keyed by patient_id -> provider_id. Segment 'until' is the waypoint index where that road stretch ends.",
+  "maya-001": {
+    "prov-alt-best": [
+      {
+        "route_id": "alt-best-regent",
+        "mode": "fastest",
+        "name": "Via Regent St",
+        "waypoints": [[43.0731, -89.4012], [43.0716, -89.4071], [43.0689, -89.4115], [43.0685, -89.4200], [43.0680, -89.4290], [43.0625, -89.4306]],
+        "segments": [
+          {"until": 2, "road_class": "local", "road": "W Johnson St / N Bassett St"},
+          {"until": 4, "road_class": "arterial", "road": "Regent St"},
+          {"until": 5, "road_class": "local", "road": "Residential side streets"}
+        ]
+      },
+      {
+        "route_id": "alt-best-beltline",
+        "mode": "safer",
+        "name": "Via Park St & Beltline (US-12/18)",
+        "waypoints": [[43.0731, -89.4012], [43.0700, -89.3960], [43.0600, -89.3955], [43.0480, -89.3955], [43.0360, -89.3950], [43.0335, -89.4100], [43.0325, -89.4300], [43.0365, -89.4480], [43.0395, -89.4550], [43.0500, -89.4550], [43.0600, -89.4550], [43.0625, -89.4306]],
+        "segments": [
+          {"until": 4, "road_class": "arterial", "road": "Park St"},
+          {"until": 8, "road_class": "us_highway", "road": "Beltline (US-12/18)"},
+          {"until": 10, "road_class": "arterial", "road": "Midvale Blvd"},
+          {"until": 11, "road_class": "arterial", "road": "Mineral Point Rd"}
+        ]
+      },
+      {
+        "route_id": "alt-best-transit",
+        "mode": "transit",
+        "name": "Metro Transit Route A + Route 18",
+        "waypoints": [[43.0731, -89.4012], [43.0745, -89.4080], [43.0730, -89.4200], [43.0725, -89.4300], [43.0660, -89.4320], [43.0625, -89.4306]],
+        "segments": [{"until": 5, "road_class": "arterial", "road": "University Ave"}],
+        "transit": {"duration_minutes": 31, "transfers": 1, "walk_minutes": 6, "step_free": true, "headway_minutes": 15, "sheltered_stops": true}
+      }
+    ],
+    "prov-original-specialist": [
+      {
+        "route_id": "orig-i39-90",
+        "mode": "fastest",
+        "name": "Via I-39/90 & I-90 through Rockford",
+        "waypoints": [[43.0731, -89.4012], [43.0600, -89.3500], [43.0480, -89.2900], [42.9200, -89.1700], [42.6828, -89.0000], [42.5083, -89.0100], [42.3500, -89.0000], [42.2500, -88.9700], [42.2000, -88.6500], [42.1300, -88.4500], [42.0400, -88.2800], [41.9900, -88.0000], [41.9500, -87.8000], [41.8950, -87.6600], [41.8781, -87.6298]],
+        "segments": [
+          {"until": 2, "road_class": "us_highway", "road": "Beltline / US-12"},
+          {"until": 7, "road_class": "interstate", "road": "I-39/90"},
+          {"until": 12, "road_class": "interstate", "road": "I-90 (Jane Addams Tollway)"},
+          {"until": 14, "road_class": "arterial", "road": "Kennedy Expwy exit / city streets"}
+        ]
+      },
+      {
+        "route_id": "orig-i94",
+        "mode": "safer",
+        "name": "Via I-94 through Milwaukee",
+        "waypoints": [[43.0731, -89.4012], [43.0850, -89.3300], [43.0900, -89.2600], [43.0814, -88.9118], [43.0761, -88.7743], [43.1000, -88.5000], [43.0300, -88.2300], [43.0200, -88.0000], [42.9300, -87.9300], [42.7261, -87.9200], [42.5847, -87.9300], [42.3700, -87.9200], [42.1500, -87.8500], [41.9800, -87.7300], [41.8781, -87.6298]],
+        "segments": [
+          {"until": 2, "road_class": "us_highway", "road": "US-151 / Stoughton Rd"},
+          {"until": 7, "road_class": "interstate", "road": "I-94 East"},
+          {"until": 13, "road_class": "interstate", "road": "I-94 / Edens Expwy"},
+          {"until": 14, "road_class": "arterial", "road": "City streets"}
+        ]
+      },
+      {
+        "route_id": "orig-bus",
+        "mode": "transit",
+        "name": "Intercity bus to Chicago + CTA Blue Line",
+        "waypoints": [[43.0731, -89.4012], [43.0480, -89.2900], [42.6828, -89.0000], [42.2500, -88.9700], [42.0400, -88.2800], [41.9786, -87.9048], [41.8781, -87.6298]],
+        "segments": [{"until": 6, "road_class": "interstate", "road": "I-39/90 / I-90"}],
+        "transit": {"duration_minutes": 225, "transfers": 1, "walk_minutes": 12, "step_free": true, "headway_minutes": 180, "sheltered_stops": false}
+      }
+    ],
+    "prov-alt-ok": [
+      {
+        "route_id": "alt-ok-151",
+        "mode": "fastest",
+        "name": "Via E Washington Ave (US-151)",
+        "waypoints": [[43.0731, -89.4012], [43.0800, -89.3850], [43.0950, -89.3550], [43.1150, -89.3300], [43.1400, -89.3300], [43.1500, -89.3400]],
+        "segments": [
+          {"until": 2, "road_class": "arterial", "road": "E Washington Ave"},
+          {"until": 4, "road_class": "us_highway", "road": "US-151"},
+          {"until": 5, "road_class": "rural", "road": "County Rd CV (unlit, 2-lane)"}
+        ]
+      },
+      {
+        "route_id": "alt-ok-51",
+        "mode": "safer",
+        "name": "Via Stoughton Rd (US-51)",
+        "waypoints": [[43.0731, -89.4012], [43.0700, -89.3700], [43.0900, -89.3380], [43.1250, -89.3350], [43.1500, -89.3400]],
+        "segments": [
+          {"until": 1, "road_class": "arterial", "road": "E Johnson St"},
+          {"until": 3, "road_class": "us_highway", "road": "Stoughton Rd (US-51)"},
+          {"until": 4, "road_class": "arterial", "road": "N Sherman Ave"}
+        ]
+      },
+      {
+        "route_id": "alt-ok-transit",
+        "mode": "transit",
+        "name": "Metro Transit Route B + Route 20",
+        "waypoints": [[43.0731, -89.4012], [43.0800, -89.3850], [43.0950, -89.3550], [43.1250, -89.3350], [43.1500, -89.3400]],
+        "segments": [{"until": 4, "road_class": "arterial", "road": "E Washington Ave"}],
+        "transit": {"duration_minutes": 48, "transfers": 1, "walk_minutes": 14, "step_free": false, "headway_minutes": 30, "sheltered_stops": false}
+      }
+    ],
+    "prov-alt-telehealth": [
+      {
+        "route_id": "alt-tele-i94",
+        "mode": "fastest",
+        "name": "Via I-94 East",
+        "waypoints": [[43.0731, -89.4012], [43.0850, -89.3300], [43.0900, -89.2600], [43.0814, -88.9118], [43.0761, -88.7743], [43.1000, -88.5000], [43.0300, -88.2300], [42.9633, -88.0034]],
+        "segments": [
+          {"until": 2, "road_class": "us_highway", "road": "US-151"},
+          {"until": 6, "road_class": "interstate", "road": "I-94 East"},
+          {"until": 7, "road_class": "arterial", "road": "Moorland Rd"}
+        ]
+      },
+      {
+        "route_id": "alt-tele-us18",
+        "mode": "safer",
+        "name": "Via US-18 through Jefferson",
+        "waypoints": [[43.0731, -89.4012], [43.0400, -89.3000], [43.0100, -89.0200], [43.0050, -88.8100], [42.9900, -88.5500], [42.9800, -88.2500], [42.9633, -88.0034]],
+        "segments": [
+          {"until": 1, "road_class": "us_highway", "road": "US-12/18"},
+          {"until": 5, "road_class": "rural", "road": "US-18 (2-lane rural)"},
+          {"until": 6, "road_class": "state_highway", "road": "WI-59"}
+        ]
+      }
+    ]
+  }
+}
