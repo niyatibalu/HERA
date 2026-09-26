@@ -12,6 +12,8 @@ import { buildProviderOptions, journeyAppointmentDate, journeyProviderId, pretty
 import { formatDate, humanize } from '../lib/format'
 import type { ProviderMatch } from '../types'
 
+const TOP = 3
+
 export function AccessPage() {
   const [params] = useSearchParams()
   const record = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
@@ -21,6 +23,7 @@ export function AccessPage() {
   // "Find better options" links from other screens arrive with the alternatives already open.
   const [expanded, setExpanded] = useState(params.get('show') === 'options')
   const [busy, setBusy] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (!journeys.data || !record.data) return <Loading label="Loading care needs…" />
@@ -114,9 +117,9 @@ export function AccessPage() {
             <h2 id="alts-h" className="section-title">
               {o.alternatives.length === 0
                 ? 'No better options found yet'
-                : `HERA found ${o.alternatives.length} better ${o.alternatives.length === 1 ? 'option' : 'options'}`}
+                : `Top ${Math.min(TOP, o.alternatives.length)} of ${o.alternatives.length} better ${o.alternatives.length === 1 ? 'option' : 'options'}`}
             </h2>
-            <p className="card-sub">Ranked for this patient’s need, insurance, location and language</p>
+            <p className="card-sub">Ranked by your care preferences. Change them above and the ranking updates.</p>
           </div>
 
           {chosen && (
@@ -133,7 +136,7 @@ export function AccessPage() {
           {error && <Alert tone="stalled" title={error} />}
 
           <div className="grid grid-2">
-            {o.alternatives.map((m, i) => {
+            {o.alternatives.filter((m, i) => showAll || i < TOP || m.provider.provider_id === chosen?.provider.provider_id).map((m, i) => {
               const isChosen = m.provider.provider_id === chosen?.provider.provider_id
               return (
                 <ProviderMatchCard
@@ -155,6 +158,13 @@ export function AccessPage() {
               )
             })}
           </div>
+          {o.alternatives.length > TOP && (
+            <div style={{ marginTop: 24, textAlign: 'center' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
+                {showAll ? 'Show fewer options' : `Show ${o.alternatives.length - TOP} more ${o.alternatives.length - TOP === 1 ? 'option' : 'options'}`}
+              </button>
+            </div>
+          )}
         </section>
       )}
     </>
