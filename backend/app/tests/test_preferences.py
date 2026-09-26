@@ -119,3 +119,42 @@ class ApiTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PreferencesChangeWhoRanksFirstTest(unittest.TestCase):
+    """Changing a preference should visibly change the top recommendation."""
+
+    SKIP = {"prov-original-specialist", "prov-pcp-01", "prov-pcp-02", "prov-obgyn-01"}
+
+    def top(self, **changes):
+        prefs = CarePreferences(
+            patient_id="maya-001", max_cost_usd=150, needs_financial_assistance=True, max_distance_mi=30,
+            expertise=["chronic_pelvic_pain", "endometriosis"], min_rating=4.0,
+            availability=["weekday_afternoon", "weekday_evening"], provider_gender="female",
+        )
+        for k, v in changes.items():
+            setattr(prefs, k, v)
+        return next(m for m in rank(prefs) if m.provider.provider_id not in self.SKIP)
+
+    def test_default_demo_preferences_pick_okafor(self):
+        self.assertEqual(self.top().provider.provider_id, "prov-alt-best")
+
+    def test_expertise_changes_the_top_specialist(self):
+        self.assertEqual(self.top(expertise=["reproductive_endocrinology"]).provider.provider_id, "prov-rei-madison")
+        self.assertEqual(self.top(expertise=["urogynecology"]).provider.provider_id, "prov-urogyn-madison")
+        self.assertEqual(self.top(expertise=["general_gynecology"]).provider.specialty, "gynecology")
+        top = self.top(expertise=["reproductive_endocrinology"])
+        self.assertIn("Expertise you asked for: reproductive endocrinology", top.match_reasons)
+
+    def test_unmatched_expertise_is_explained(self):
+        r = by_id(rank(CarePreferences(patient_id="maya-001", expertise=["urogynecology"])))
+        self.assertTrue(any("Not a match for urogynecology" in t for t in r["prov-alt-best"].access_tradeoffs))
+
+    def test_gender_changes_the_top_provider(self):
+        self.assertEqual(self.top(provider_gender="male").provider.gender, "male")
+        self.assertEqual(self.top(provider_gender="nonbinary").provider.gender, "nonbinary")
+
+    def test_language_counts(self):
+        r = by_id(rank(None))
+        self.assertGreater(r["prov-alt-best"].score, 0)
+        self.assertIn("No confirmed es language support", r["prov-pfpt-madison"].access_tradeoffs)
