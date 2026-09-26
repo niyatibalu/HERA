@@ -173,6 +173,8 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .alert-review { background: var(--review-soft); border-color: var(--review-line); }
 .alert-review .alert-icon { color: var(--review); }
 .alert-info { background: var(--info-soft); border-color: transparent; }
+.alert-good { background: var(--good-soft); border-color: transparent; }
+.alert-good .alert-icon { color: var(--good); }
 .alert-info .alert-icon { color: var(--info); }
 .alert-icon { flex: none; margin-top: 1px; }
 .alert-title { font-size: 14px; font-weight: 600; }

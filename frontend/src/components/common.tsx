@@ -51,12 +51,12 @@ export function CardLink({ to, children }: { to: string; children: ReactNode }) 
   )
 }
 
-type AlertTone = 'stalled' | 'review' | 'info'
-const ALERT_ICON: Record<AlertTone, IconName> = { stalled: 'pause', review: 'flag', info: 'info' }
+type AlertTone = 'stalled' | 'review' | 'info' | 'good'
+const ALERT_ICON: Record<AlertTone, IconName> = { stalled: 'pause', review: 'flag', info: 'info', good: 'check' }
 
 export function Alert({ tone, title, children, action }: { tone: AlertTone; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className={`alert alert-${tone}`} role={tone === 'stalled' ? 'alert' : undefined}>
+    <div className={`alert alert-${tone}`} role={tone === 'stalled' ? 'alert' : tone === 'good' ? 'status' : undefined}>
       <Icon name={ALERT_ICON[tone]} className="alert-icon" />
       <div>
         <div className="alert-title">{title}</div>

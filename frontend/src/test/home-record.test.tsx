@@ -7,7 +7,7 @@ describe('Patient home', () => {
     renderApp('/')
     expect(await screen.findByRole('heading', { name: /welcome back, maya/i })).toBeInTheDocument()
     expect(screen.getByText(/specialist appointment not scheduled after 9 days/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /find better options/i })).toHaveAttribute('href', '/access?journey=jr-specialist')
+    expect(screen.getByRole('link', { name: /find better options/i })).toHaveAttribute('href', '/access?journey=jr-specialist&show=options')
     for (const h of [/active care/i, /upcoming/i, /active referrals/i, /recent health changes/i, /health trend/i]) {
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
     }

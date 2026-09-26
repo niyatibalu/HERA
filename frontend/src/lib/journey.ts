@@ -104,7 +104,7 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
         title: `${/specialist/i.test(j.need) && step.state === 'appointment_scheduled' ? 'Specialist appointment not scheduled' : STALL_TITLE[step.state] ?? `${step.label} stalled`} after ${daysInState(j, today)} days`,
         detail: j.stalled_reason ?? `${j.need} has not moved forward.`,
         journey_id: j.journey_id,
-        action: { label: 'Find better options', to: `/access?journey=${j.journey_id}` },
+        action: { label: 'Find better options', to: `/access?journey=${j.journey_id}&show=options` },
       })
     } else if (step.state === 'travel_planned') {
       out.push({

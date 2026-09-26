@@ -7,6 +7,8 @@ import { DEMO_TODAY } from './mocks/record'
 import { HomePage } from './pages/HomePage'
 import { RecordPage } from './pages/RecordPage'
 import { TimelinePage } from './pages/TimelinePage'
+import { AccessPage } from './pages/AccessPage'
+import { JourneyPage } from './pages/JourneyPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
@@ -20,6 +22,8 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="record" element={<RecordPage />} />
         <Route path="timeline" element={<TimelinePage />} />
+        <Route path="access" element={<AccessPage />} />
+        <Route path="journey" element={<JourneyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -112,6 +112,23 @@ export const api = {
     return r
   },
 
+  async planTravel(patientId: string, journeyId: string, routeId: string, routeLabel: string) {
+    const r = await request<CareJourney>(
+      API_BASE,
+      `/patients/${patientId}/journeys/${journeyId}/travel`,
+      () => {
+        const j = demoJourneys.find((x) => x.journey_id === journeyId)
+        if (!j) throw new Error('Unknown journey')
+        j.state = 'travel_planned'
+        j.state_history = [...j.state_history.filter((t) => t.state !== 'travel_planned'), { state: 'travel_planned', entered_at: DEMO_TODAY, note: `${routeLabel} selected` }]
+        return clone(j)
+      },
+      { method: 'POST', body: JSON.stringify({ route_id: routeId }) },
+    )
+    notify()
+    return r
+  },
+
   getRouteOptions: (patientId: string, journeyId: string) =>
     request<RouteOptionsResponse>(MAP_BASE, `/routes?patient_id=${patientId}&journey_id=${journeyId}`, () => mockRouteOptions),
 
