@@ -61,6 +61,11 @@ export const mockProviderMatches: ProviderMatch[] = [
     access_tradeoffs: [],
   },
   {
+    provider: byId('prov-alt-telehealth'), score: 75.9, distance_mi: 71.0,
+    match_reasons: ['Relevant expertise: chronic pelvic pain', `In-network for ${PLAN}`, 'Short wait: 6 days', 'Telehealth available'],
+    access_tradeoffs: ['Far from home: 71.0 mi', 'No confirmed es language support'],
+  },
+  {
     provider: byId('prov-pcp-01'), score: 75.0, distance_mi: 0,
     match_reasons: [`In-network for ${PLAN}`, 'Short wait: 3 days', 'Close to home: 0.0 mi', 'Telehealth available', 'Speaks es'],
     access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is primary care)'],

@@ -15,7 +15,8 @@ describe('Care access and care journey', () => {
 
     await user.click(screen.getByRole('button', { name: /find better options/i }))
     const options = screen.getAllByRole('article', { name: /provider option/i })
-    expect(options).toHaveLength(2)
+    expect(options).toHaveLength(3)
+    expect(within(options[1]).getByText('Kara Whitmore, DPT')).toBeInTheDocument()
     const best = options[0]
     for (const fact of ['12 days', '1.7 mi', 'In network', '$95', 'Available']) expect(within(best).getByText(fact)).toBeInTheDocument()
     expect(within(best).getByText(/why hera ranked this option/i)).toBeInTheDocument()

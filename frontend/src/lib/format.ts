@@ -70,6 +70,7 @@ const SPECIALTY: Record<string, string> = {
   obgyn: 'OB/GYN',
   gynecology: 'Gynecology',
   chronic_pelvic_pain: 'Chronic pelvic pain specialist',
+  pelvic_floor_physical_therapy: 'Pelvic floor physical therapy',
 }
 export function specialtyLabel(s?: string | null) {
   return s ? SPECIALTY[s] ?? humanize(s) : ''
