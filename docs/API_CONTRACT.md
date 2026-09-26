@@ -1,0 +1,77 @@
+# HERA API Contract
+
+Owned by: backend (Person 2). Update this file first, announce the change,
+then frontend/map update their integrations, then commit separately —
+see the git protocol in the team plan.
+
+Base URL (local dev): `http://localhost:8000`
+
+Field names are canonical `snake_case` everywhere. Do not introduce a
+second spelling of any field (e.g. always `wait_days`, never `waitDays`,
+`wait_time`, or `estimatedWait`).
+
+## Core objects
+
+| Object | Shape | Notes |
+|---|---|---|
+| `Patient` | `patient_id, name, date_of_birth, sex, insurance_plan, home_location{lat,lon,address}, preferred_language, mobility_constraints[], accessibility_needs[]` | Synthetic only |
+| `HealthEvent` | `event_id, patient_id, event_type, event_date, topic, description, specialty?, provider_id?, status?, severity?(1-5), value?, unit?, source, raw{}` | `event_type` ∈ `encounter, diagnosis, symptom, medication, lab, imaging, procedure, referral` |
+| `TrendFlag` | `flag_id, patient_id, pattern_type, topic, first_seen, last_seen, encounter_count, trend, evidence[], message, action, generated_at` | `action` is always `"clinician_review"`. Never a diagnosis. |
+| `Provider` | `provider_id, name, specialty, location, wait_days, telehealth_available, in_network_plans[], estimated_cost_usd?, accessibility_features[], languages[], expertise_tags[]` | |
+| `ProviderMatch` | `provider, score(0-100), distance_mi, match_reasons[], access_tradeoffs[]` | Returned sorted, highest score first |
+| `CareJourney` | `journey_id, patient_id, need, state, state_history[], provider_id?, appointment_date?, stalled, stalled_reason?` | `state` ∈ see below |
+| `ResearchConsent` | `patient_id, consent, consent_timestamp?, scope, revoked, revoked_timestamp?` | `is_active` = `consent && !revoked` |
+| `Study` | `study_id, title, criteria{...}, description` | |
+| `StudyMatch` | `study_id, candidate_id, eligibility_status, criteria_satisfied[], criteria_unknown[], reason` | `candidate_id` is a one-way pseudonym. Never `patient_id`, name, or address. `eligibility_status` is always `"potentially_eligible"`. |
+
+`CareState` values, in expected order:
+`need_identified → provider_matched → records_ready → appointment_scheduled
+→ travel_planned → appointment_completed → followup_required →
+followup_completed`, plus `stalled` (reachable from any state).
+
+## Endpoints
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/health` | `{status: "ok"}` |
+| GET | `/patients` | `{patient_ids: [...]}` |
+| GET | `/patients/{id}` | `Patient` |
+| GET | `/patients/{id}/health-events` | `HealthEvent[]`, sorted by date |
+| GET | `/patients/{id}/trend-flags?as_of=YYYY-MM-DD` | `TrendFlag[]` (`as_of` optional) |
+| GET | `/patients/{id}/providers?specialty=...&telehealth=bool&max_distance_mi=...` | `ProviderMatch[]`, ranked |
+| GET | `/patients/{id}/care-journeys` | `CareJourney[]` (includes `stall_warning`) |
+| POST | `/patients/{id}/care-journeys` `{need}` | `CareJourney` |
+| POST | `/patients/{id}/care-journeys/{journey_id}/advance` `{state, note?}` | `CareJourney`, 400 on invalid transition |
+| GET | `/patients/{id}/research-consent` | `ResearchConsent` |
+| POST | `/patients/{id}/research-consent` `{consent, scope?}` | `ResearchConsent` |
+| GET | `/patients/{id}/study-matches` | `StudyMatch[]` — always `[]` unless consent is active |
+| GET | `/studies` | `Study[]` — researcher-side, no patient data |
+
+Unknown `patient_id` → `404 {detail: "..."}` on every patient-scoped route.
+
+Interactive docs once the server is running: `GET /docs`.
+
+## Demo patient
+
+**Maya, 29** (`patient_id: "maya-001"`). Pelvic pain first documented
+January 2025, heavy menstrual bleeding in March, iron deficiency in May,
+worsening pain in July, second (OB/GYN) specialist visit in August/September,
+hormonal therapy trial with no improvement through December, referred to a
+chronic pelvic pain specialist who is out-of-network / 61-day wait / 122 mi
+away. HERA's matching engine ranks an in-network, 12-day-wait, 1.7 mi
+alternative (`prov-alt-best`) above the original referral.
+
+## FAILSAFE
+
+- The longitudinal, matching, lifecycle, and research engines
+  (`backend/app/engine/`) are pure Python stdlib — **no LLM call and no
+  network access is required** for any of them to run. They pass their
+  full test suite with nothing installed beyond Python itself.
+- `fastapi`/`uvicorn` are only the HTTP wrapper. If the server can't start
+  for any reason, every engine can still be run and demoed directly from a
+  Python shell against the same calls the routes make.
+- All patient/provider/study data is synthetic and generated in-process —
+  there is no external data dependency to fail.
+- DEMO MODE = the default running state of this backend. There is no
+  separate "demo mode" flag to remember to flip; running `uvicorn
+  app.main:app` always serves synthetic data with deterministic engines.
