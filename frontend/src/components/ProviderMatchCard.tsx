@@ -1,8 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { ProviderMatch } from '../types'
 import { Icon } from './Icon'
-import { formatCurrency, humanize, specialtyLabel } from '../lib/format'
+import { formatCurrency, specialtyLabel } from '../lib/format'
 import { prettyReason } from '../lib/providers'
+import { expertiseLabel } from '../lib/preferences'
 
 /** One provider option with the facts that decide whether care is reachable, and why it ranks where it does. */
 export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alternative', compareTo, action }: {
@@ -48,7 +49,7 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
       </dl>
 
       <div className="row provider-tags">
-        {p.expertise_tags.slice(0, 2).map((t) => <span key={t} className="badge">{humanize(t)}</span>)}
+        {p.expertise_tags.slice(0, 2).map((t) => <span key={t} className="badge">{expertiseLabel(t)}</span>)}
         {p.accessibility_features.includes('wheelchair_accessible') && <span className="badge badge-info">Wheelchair accessible</span>}
         {p.sliding_scale && <span className="badge badge-good">Sliding-scale fees</span>}
       </div>

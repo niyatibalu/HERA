@@ -16,7 +16,9 @@ describe('Care access and care journey', () => {
     await user.click(screen.getByRole('button', { name: /find better options/i }))
     const options = screen.getAllByRole('article', { name: /provider option/i })
     expect(options).toHaveLength(3)
-    expect(within(options[1]).getByText('Kara Whitmore, DPT')).toBeInTheDocument()
+    expect(within(options[1]).getByText('Lauren Kim, DPT')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /show \d+ more options/i }))
+    expect(screen.getAllByRole('article', { name: /provider option/i }).length).toBeGreaterThan(3)
     const best = options[0]
     for (const fact of ['12 days', '1.7 mi', 'In network', '$95', 'Available']) expect(within(best).getByText(fact)).toBeInTheDocument()
     expect(within(best).getByText(/why hera ranked this option/i)).toBeInTheDocument()
@@ -33,7 +35,7 @@ describe('Care access and care journey', () => {
 
     await user.click(await screen.findByRole('button', { name: /choose dr\. ifeoma okafor/i }))
     expect(await screen.findByText(/booked with dr\. ifeoma okafor on dec 29, 2025/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /choose dr\. michael chen/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /choose lauren kim, dpt/i })).toBeDisabled()
 
     await user.click(screen.getByRole('link', { name: /view care journey/i }))
     const updated = await screen.findByRole('region', { name: /care journey: chronic pelvic pain/i })

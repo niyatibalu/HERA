@@ -27,7 +27,6 @@ export function buildProviderOptions(journey: CareJourney, matches: ProviderMatc
   const alternatives = matches
     .filter((m) => m.provider.provider_id !== originalId && m.provider.specialty !== 'primary_care' && !alreadySeen.has(m.provider.provider_id) && m.score > floor)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
   return {
     journey_id: journey.journey_id,
     need: journey.need,

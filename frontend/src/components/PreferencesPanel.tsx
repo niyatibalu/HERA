@@ -3,13 +3,11 @@ import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import type { AvailabilitySlot, CarePreferences } from '../types'
 import { Icon } from './Icon'
-import { humanize } from '../lib/format'
-import { SLOT_LABEL } from '../lib/preferences'
+import { EXPERTISE_OPTIONS, expertiseLabel, SLOT_LABEL } from '../lib/preferences'
 
 const PLANS = ['MidwestCare PPO', 'MidwestCare HMO', 'BadgerCare Medicaid', 'Uninsured / self-pay']
 const BUDGETS = [50, 100, 150, 250, 400]
 const DISTANCES = [5, 10, 30, 60, 100]
-const EXPERTISE = ['chronic_pelvic_pain', 'endometriosis', 'pelvic_floor_dysfunction', 'general_gynecology', 'obstetrics']
 const RATINGS = [3.5, 4, 4.5]
 const TELEHEALTH: Record<CarePreferences['telehealth'], string> = { no_preference: 'No preference', prefer_telehealth: 'Prefer telehealth', in_person_only: 'In person only' }
 const GENDER: Record<CarePreferences['provider_gender'], string> = { no_preference: 'No preference', female: 'Female', male: 'Male', nonbinary: 'Nonbinary' }
@@ -25,7 +23,7 @@ export function PreferencesPanel({ planOnFile, home }: { planOnFile: string; hom
     { icon: 'pill' as const, label: 'Cost', value: `${p.max_cost_usd != null ? `Up to $${p.max_cost_usd} per visit` : 'No budget limit'}${p.needs_financial_assistance ? ' · needs financial assistance' : ''}` },
     { icon: 'shield' as const, label: 'Insurance', value: p.insurance_plan ?? planOnFile },
     { icon: 'access' as const, label: 'Location', value: p.max_distance_mi != null ? `Within ${p.max_distance_mi} mi of ${home}` : `Any distance from ${home}` },
-    { icon: 'stethoscope' as const, label: 'Expertise', value: `${p.expertise.length ? p.expertise.map(humanize).join(', ') : 'Any'}${p.min_rating != null ? ` · rated ${p.min_rating}+` : ''}` },
+    { icon: 'stethoscope' as const, label: 'Expertise', value: `${p.expertise.length ? p.expertise.map(expertiseLabel).join(', ') : 'Any'}${p.min_rating != null ? ` · rated ${p.min_rating}+` : ''}` },
     { icon: 'calendar' as const, label: 'Schedule', value: p.availability.length ? p.availability.map((s) => SLOT_LABEL[s]).join(', ') : 'Any time' },
     { icon: 'video' as const, label: 'Telehealth', value: TELEHEALTH[p.telehealth] },
     { icon: 'user' as const, label: 'Clinician', value: p.provider_gender === 'no_preference' ? 'No gender preference' : `${GENDER[p.provider_gender]} clinician` },
@@ -116,10 +114,10 @@ function PreferencesForm({ initial, planOnFile, onDone }: { initial: CarePrefere
         <fieldset className="field field-wide">
           <legend className="field-label">Expertise you're looking for</legend>
           <div className="choice-row">
-            {EXPERTISE.map((x) => (
-              <label key={x} className="choice">
-                <input type="checkbox" checked={f.expertise.includes(x)} onChange={() => set('expertise', toggle(f.expertise, x))} />
-                {humanize(x)}
+            {EXPERTISE_OPTIONS.map((x) => (
+              <label key={x.value} className="choice">
+                <input type="checkbox" checked={f.expertise.includes(x.value)} onChange={() => set('expertise', toggle(f.expertise, x.value))} />
+                {x.label}
               </label>
             ))}
           </div>

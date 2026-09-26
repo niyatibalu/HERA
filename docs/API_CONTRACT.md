@@ -97,7 +97,7 @@ telehealth and accessibility, plus the patient's saved preferences: budget and f
 assistance, insurance plan, travel limit, requested expertise, minimum rating, schedule
 availability, telehealth preference and clinician gender. Each preference adds a
 `match_reasons` entry when met and an `access_tradeoffs` entry when not. Scores are
-normalized to 0–100.
+normalized to 0–100. Expertise the patient asks for defines the fit: providers with it get full specialty credit, and providers without it are ranked down with a "Not a match for …" tradeoff. Language match (patient's `preferred_language`) is scored too. The synthetic directory has 19 providers across pelvic pain, endometriosis surgery, pelvic floor therapy, fertility, urogynecology, pain management and gynecology.
 
 Trend flags (`/trend-flags`) remain available in the API but are no longer shown in the
 app: patients already get trends from MyChart. The app shows a patient-written symptom

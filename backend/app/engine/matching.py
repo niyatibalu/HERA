@@ -33,13 +33,14 @@ WEIGHT_ACCESSIBILITY = 5
 # Patient-preference components. An unset preference earns full neutral
 # credit, so it never changes the ranking on its own.
 WEIGHT_REVIEWS = 8
-WEIGHT_EXPERTISE = 6
-WEIGHT_SCHEDULE = 6
-WEIGHT_GENDER = 6
+WEIGHT_EXPERTISE = 12
+WEIGHT_SCHEDULE = 8
+WEIGHT_GENDER = 10
+WEIGHT_LANGUAGE = 6
 MAX_TOTAL = (
     WEIGHT_SPECIALTY_FIT + WEIGHT_NETWORK + WEIGHT_WAIT + WEIGHT_DISTANCE + WEIGHT_COST
     + WEIGHT_TELEHEALTH + WEIGHT_ACCESSIBILITY + WEIGHT_REVIEWS + WEIGHT_EXPERTISE
-    + WEIGHT_SCHEDULE + WEIGHT_GENDER
+    + WEIGHT_SCHEDULE + WEIGHT_GENDER + WEIGHT_LANGUAGE
 )
 
 SLOT_LABELS = {
@@ -102,7 +103,22 @@ class ProviderMatchingEngine:
         telehealth_pref = "prefer_telehealth" if request.prefer_telehealth else prefs.telehealth
 
         # -- specialty fit --------------------------------------------------
-        if provider.specialty == request.required_specialty:
+        # The referral sets the default need; expertise the patient asked for
+        # counts as a fit too, so choosing e.g. pelvic floor therapy surfaces
+        # those clinicians instead of only the referral's specialty.
+        skills = {provider.specialty, *provider.expertise_tags}
+        asked_for = [e for e in prefs.expertise if e in skills]
+        if prefs.expertise:
+            # The patient said what expertise she wants: that defines the fit.
+            if asked_for:
+                total += WEIGHT_SPECIALTY_FIT
+            else:
+                total += WEIGHT_SPECIALTY_FIT * 0.2
+                tradeoffs.append(
+                    f"Not a match for {', '.join(e.replace('_', ' ') for e in prefs.expertise)} "
+                    f"(provider is {provider.specialty.replace('_', ' ')})"
+                )
+        elif provider.specialty == request.required_specialty:
             total += WEIGHT_SPECIALTY_FIT
             reasons.append(f"Specialty match: {provider.specialty.replace('_', ' ')}")
         elif request.required_specialty in provider.expertise_tags:
@@ -194,20 +210,19 @@ class ProviderMatchingEngine:
         else:
             total += WEIGHT_ACCESSIBILITY  # no needs stated -- full neutral credit
 
-        if patient.preferred_language not in ("en", *provider.languages):
+        if patient.preferred_language in provider.languages:
+            total += WEIGHT_LANGUAGE
+            if patient.preferred_language != "en":
+                reasons.append(f"Speaks {patient.preferred_language}")
+        else:
             tradeoffs.append(f"No confirmed {patient.preferred_language} language support")
-        elif patient.preferred_language in provider.languages:
-            reasons.append(f"Speaks {patient.preferred_language}")
 
         # -- expertise the patient asked for ---------------------------------
         if prefs.expertise:
-            skills = {provider.specialty, *provider.expertise_tags}
-            matched = [e for e in prefs.expertise if e in skills]
+            matched = asked_for
             total += WEIGHT_EXPERTISE * len(matched) / len(prefs.expertise)
             if matched:
-                reasons.append(f"Expertise you asked for: {', '.join(m.replace('_', ' ') for m in matched)}")
-            else:
-                tradeoffs.append(f"No listed expertise in {', '.join(e.replace('_', ' ') for e in prefs.expertise)}")
+                reasons.insert(0, f"Expertise you asked for: {', '.join(m.replace('_', ' ') for m in matched)}")
         else:
             total += WEIGHT_EXPERTISE
 

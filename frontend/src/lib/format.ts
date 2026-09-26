@@ -71,6 +71,10 @@ const SPECIALTY: Record<string, string> = {
   gynecology: 'Gynecology',
   chronic_pelvic_pain: 'Chronic pelvic pain specialist',
   pelvic_floor_physical_therapy: 'Pelvic floor physical therapy',
+  gynecologic_surgery: 'Gynecologic surgery',
+  reproductive_endocrinology: 'Fertility & hormones',
+  urogynecology: 'Urogynecology',
+  pain_management: 'Pain management',
 }
 export function specialtyLabel(s?: string | null) {
   return s ? SPECIALTY[s] ?? humanize(s) : ''
