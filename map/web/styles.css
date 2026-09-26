@@ -131,3 +131,5 @@ h2 { font-size: 15px; margin: 0 0 2px; }
   .panel-head, .block { padding-left: 16px; padding-right: 16px; }
   .factor { grid-template-columns: 120px 1fr 30px; }
 }
+.cond-select { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.cond-select select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }

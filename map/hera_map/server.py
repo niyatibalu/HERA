@@ -20,7 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from . import config
-from .conditions import clear_conditions
+from .conditions import UnknownScenario, get_conditions, scenario_names
 from .geo import haversine_mi
 from .routing import route_candidates
 from .scoring import RECOMMENDATION_NOTE, default_weights, parse_weight_overrides, rank
@@ -59,8 +59,16 @@ def handle_world(qs):
     return world_payload(ctx)
 
 
-def load_conditions(qs, as_of: str):
-    return clear_conditions(as_of)
+def load_conditions(qs, as_of: str, points):
+    try:
+        return get_conditions(as_of, points, _one(qs, "scenario"))
+    except UnknownScenario as e:
+        raise ApiError(400, f"unknown scenario '{e.args[0]}'; expected one of {', '.join(scenario_names())}")
+
+
+def handle_conditions(qs):
+    ctx = patient_context(_one(qs, "patient_id", "maya-001"))
+    return load_conditions(qs, _one(qs, "date", config.demo_today()), [ctx.origin]).to_dict()
 
 
 def handle_routes(qs):
@@ -80,13 +88,17 @@ def handle_routes(qs):
     except ValueError as e:
         raise ApiError(400, str(e))
 
-    today = date.fromisoformat(_one(qs, "date", config.demo_today()))
+    try:
+        today = date.fromisoformat(_one(qs, "date", config.demo_today()))
+    except ValueError:
+        raise ApiError(400, "date must be YYYY-MM-DD")
     appointment = today + timedelta(days=int(provider.get("wait_days", 0)))
-    cond = load_conditions(qs, appointment.isoformat())
     origin = ctx.origin
+    dest = (provider["location"]["lat"], provider["location"]["lon"])
+    mid = ((origin[0] + dest[0]) / 2, (origin[1] + dest[1]) / 2)
+    cond = load_conditions(qs, appointment.isoformat(), [origin, mid, dest])
     result = rank(route_candidates(ctx.patient["patient_id"], origin, provider), ctx.patient, provider, cond, weights, today)
 
-    dest = (provider["location"]["lat"], provider["location"]["lon"])
     nearby = sorted(
         ({**f, "distance_from_destination_mi": round(haversine_mi(dest, (f["lat"], f["lon"])), 1)} for f in WORLD.facilities),
         key=lambda f: f["distance_from_destination_mi"],
@@ -120,6 +132,7 @@ ROUTES = {
     "/health": handle_health,
     "/world": handle_world,
     "/routes": handle_routes,
+    "/conditions": handle_conditions,
 }
 
 

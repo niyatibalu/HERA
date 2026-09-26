@@ -29,8 +29,11 @@ def live_weather() -> bool:
     return _flag("HERA_LIVE_WEATHER") and not demo_mode()
 
 
-def live_routing() -> bool:
-    return _flag("HERA_LIVE_ROUTING") and not demo_mode()
+def road_events_url() -> str | None:
+    """Optional GeoJSON road-events feed (see conditions.geojson_road_events)."""
+    if demo_mode():
+        return None
+    return os.environ.get("HERA_ROAD_EVENTS_URL", "").strip() or None
 
 
 def scenario() -> str:

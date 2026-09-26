@@ -77,6 +77,13 @@
     {"name": "Racine", "lat": 42.7261, "lon": -87.7829, "population": 77000},
     {"name": "Kenosha", "lat": 42.5847, "lon": -87.8212, "population": 99000},
     {"name": "Whitewater", "lat": 42.8336, "lon": -88.7323, "population": 15000},
-    {"name": "Delavan", "lat": 42.6331, "lon": -88.6437, "population": 8500}
+    {"name": "Delavan", "lat": 42.6331, "lon": -88.6437, "population": 8500},
+    {"name": "Jefferson", "lat": 43.0056, "lon": -88.8073, "population": 8000},
+    {"name": "Fort Atkinson", "lat": 42.9289, "lon": -88.8371, "population": 12500},
+    {"name": "Huntley", "lat": 42.1681, "lon": -88.4281, "population": 27000},
+    {"name": "Waukegan", "lat": 42.3636, "lon": -87.8448, "population": 89000},
+    {"name": "Gurnee", "lat": 42.3703, "lon": -87.9020, "population": 31000},
+    {"name": "Northbrook", "lat": 42.1275, "lon": -87.8290, "population": 35000},
+    {"name": "Skokie", "lat": 42.0324, "lon": -87.7416, "population": 67000}
   ]
 }

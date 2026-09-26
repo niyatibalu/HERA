@@ -149,7 +149,8 @@
     try {
       const q = new URLSearchParams({ patient_id: PATIENT_ID, provider_id: providerId })
       if (JOURNEY_ID) q.set('journey_id', JOURNEY_ID)
-      for (const k of ['weights', 'scenario', 'date']) if (params.get(k)) q.set(k, params.get(k))
+      for (const k of ['weights', 'date']) if (params.get(k)) q.set(k, params.get(k))
+      q.set('scenario', $('scenario').value)
       data = await getJSON(`/routes?${q}`)
     } catch (e) {
       if (req === routeReq) $('route-list').innerHTML = `<p class="error">Could not load routes: ${esc(e.message || e)}</p>`
@@ -224,10 +225,9 @@
         .bindTooltip(`<b>${esc(humanize(e.kind))}</b><br>${esc(e.label)}${e.delay_minutes ? `<br>+${e.delay_minutes} min delay` : ''}`)
         .addTo(condLayer)
     }
-    const chip = document.getElementById('cond-chip')
-    const text = `${cond.summary}`
-    if (chip) chip.textContent = text
-    else if (cond.scenario !== 'clear') $('status-chips').insertAdjacentHTML('beforeend', `<span class="chip warn" id="cond-chip">${esc(text)}</span>`)
+    document.getElementById('cond-chip')?.remove()
+    const live = /open-meteo|feed/.test(`${cond.source.weather} ${cond.source.roads}`)
+    $('status-chips').insertAdjacentHTML('beforeend', `<span class="chip ${cond.weather.length ? 'warn' : 'good'}" id="cond-chip">${esc(cond.summary)}${live ? ' · live' : ''}</span>`)
   }
 
   async function init() {
@@ -241,6 +241,13 @@
     renderHeader(state.world)
     renderProviders(state.world)
     drawWorld(state.world)
+    if (params.get('scenario')) $('scenario').value = params.get('scenario')
+    $('scenario').addEventListener('change', () => {
+      const url = new URL(location.href)
+      url.searchParams.set('scenario', $('scenario').value)
+      history.replaceState(null, '', url)
+      if (state.selected) loadRoutes(state.selected)
+    })
     const initial = params.get('provider_id')
     if (initial) selectProvider(initial)
   }
