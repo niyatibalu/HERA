@@ -9,6 +9,7 @@ import { RecordPage } from './pages/RecordPage'
 import { TimelinePage } from './pages/TimelinePage'
 import { AccessPage } from './pages/AccessPage'
 import { JourneyPage } from './pages/JourneyPage'
+import { ResearchPage } from './pages/ResearchPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="timeline" element={<TimelinePage />} />
         <Route path="access" element={<AccessPage />} />
         <Route path="journey" element={<JourneyPage />} />
+        <Route path="research" element={<ResearchPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

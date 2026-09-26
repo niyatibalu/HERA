@@ -181,3 +181,28 @@
 .route-summary { font-size: 12.5px; color: var(--ink-2); }
 .route-conds { display: flex; gap: 4px; flex-wrap: wrap; }
 .route-conds .badge { font-size: 11px; padding: 3px 6px; }
+
+/* ---------- Research consent ---------- */
+.consent-head { display: flex; gap: 14px; align-items: flex-start; }
+.consent-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); display: grid; place-items: center; }
+.consent-title { font-size: 19px; font-weight: 650; letter-spacing: -0.015em; }
+.consent-q { font-size: 15px; color: var(--ink-2); margin-top: 6px; max-width: 60ch; }
+.consent-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.consent-points li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.consent-points svg { flex: none; margin-top: 3px; color: var(--accent); }
+.consent-points strong { color: var(--ink); }
+.consent-lists { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; }
+.consent-lists ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 3px; }
+.consent-actions { gap: 10px; }
+.consent-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-2); }
+.consent-status > svg { flex: none; color: var(--muted); }
+.consent-status.is-on { background: var(--good-soft); border-color: transparent; color: var(--ink); }
+.consent-status.is-on > svg { color: var(--good); }
+.consent-status .btn { margin-left: auto; }
+.how { margin: 0; padding: 16px 20px 18px 38px; font-size: 13.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 8px; }
+.study-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.criteria { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
+.criteria li { display: flex; gap: 8px; align-items: center; }
+.criteria svg { color: var(--accent); flex: none; }
+.criteria .is-unknown svg { color: var(--muted); }
+.study-details { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 8px; }
