@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
@@ -101,9 +103,15 @@ def _live_context(base: str, patient_id: str) -> PatientContext:
     return PatientContext(patient=patient, providers=providers, original_provider_id=original, journeys=journeys, source="live")
 
 
+# After a backend failure, skip it for a while so a hung backend doesn't slow every map request.
+BACKEND_RETRY_S = 20.0
+_backend_down_until = 0.0
+
+
 def patient_context(patient_id: str) -> PatientContext:
+    global _backend_down_until
     base = None if config.demo_mode() else config.backend_url()
-    if base:
+    if base and time.monotonic() >= _backend_down_until:
         try:
             return _live_context(base, patient_id)
         except urllib.error.HTTPError as e:
@@ -111,7 +119,8 @@ def patient_context(patient_id: str) -> PatientContext:
                 raise UnknownPatient(patient_id) from e
             log.warning("backend error %s for %s; using demo snapshot", e.code, patient_id)
         except Exception as e:  # network down, timeout, bad JSON
-            log.warning("backend unavailable (%s); using demo snapshot", e)
+            log.warning("backend unavailable (%s); using demo snapshot for %ds", e, BACKEND_RETRY_S)
+            _backend_down_until = time.monotonic() + BACKEND_RETRY_S
     return _snapshot_context(patient_id)
 
 

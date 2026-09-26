@@ -7,6 +7,7 @@ import urllib.request
 
 from hera_map import geo
 from hera_map.server import make_server
+from hera_map import sources
 from hera_map.sources import patient_context, world_payload
 
 
@@ -87,6 +88,7 @@ class BackendFallbackTest(unittest.TestCase):
         os.environ.pop("HERA_DEMO_MODE", None)
         os.environ["HERA_API_URL"] = "http://127.0.0.1:9"  # nothing listens here
         try:
+            sources._backend_down_until = 0.0
             ctx = patient_context("maya-001")
             self.assertEqual(ctx.source, "demo")
             self.assertEqual(world_payload(ctx)["original_provider_id"], "prov-original-specialist")
