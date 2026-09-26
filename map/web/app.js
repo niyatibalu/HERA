@@ -6,6 +6,17 @@
   const params = new URLSearchParams(location.search)
   const API = (params.get('api') || '').replace(/\/$/, '')
   const PATIENT_ID = params.get('patient_id') || 'maya-001'
+  // Embedding inside the HERA web app:
+  //   embed=1  compact: map + routes only (travel step)
+  //   inapp=1  full map with side panel, minus the page title the app already shows
+  //   theme=light|dark  match the host app
+  const EMBED = params.get('embed') === '1'
+  const INAPP = params.get('inapp') === '1'
+  if (EMBED) document.body.classList.add('embed')
+  if (INAPP) document.body.classList.add('inapp')
+  if (['light', 'dark'].includes(params.get('theme'))) document.documentElement.dataset.theme = params.get('theme')
+  const inFrame = window.parent !== window
+  const tellParent = (msg) => { if (inFrame) window.parent.postMessage({ source: 'hera-map', ...msg }, '*') }
   const JOURNEY_ID = params.get('journey_id') || ''
 
   const $ = (id) => document.getElementById(id)
@@ -121,7 +132,7 @@
     if (!pr) return
     const home = state.world.patient.home_location
     map.fitBounds(L.latLngBounds([[home.lat, home.lon], [pr.location.lat, pr.location.lon]]), { padding: [60, 60], maxZoom: 14 })
-    state.providerMarkers[providerId]?.openTooltip()
+    if (!EMBED) state.providerMarkers[providerId]?.openTooltip() // keep the compact embed uncluttered
     const url = new URL(location.href)
     url.searchParams.set('provider_id', providerId)
     history.replaceState(null, '', url)
@@ -159,7 +170,8 @@
     if (req !== routeReq) return // a newer selection won
     state.routes = data
     const rec = data.options.find((o) => o.recommended) || data.options[0]
-    state.selectedRoute = rec?.route_id
+    const wanted = params.get('route')
+    state.selectedRoute = data.options.some((o) => o.route_id === wanted) ? wanted : rec?.route_id
     $('routes-sub').textContent = `To ${data.destination} · appointment ${data.appointment_date}`
     $('disclaimer').textContent = data.disclaimer
     renderRoutes()
@@ -206,10 +218,19 @@
     for (const b of $('route-list').querySelectorAll('.route')) b.addEventListener('click', () => selectRoute(b.dataset.id))
   }
 
-  function selectRoute(routeId) {
+  function selectRoute(routeId, fromParent = false) {
+    if (!state.routes?.options.some((o) => o.route_id === routeId)) return
     state.selectedRoute = routeId
     renderRoutes()
+    if (!fromParent) tellParent({ type: 'routeSelected', route_id: routeId })
   }
+
+  // The host app can highlight a route without reloading the frame.
+  window.addEventListener('message', (e) => {
+    const m = e.data
+    if (!m || m.source !== 'hera-app' || typeof m.route_id !== 'string') return
+    if (m.type === 'selectRoute') selectRoute(m.route_id, true)
+  })
 
   const condLayer = L.layerGroup().addTo(map)
   function renderConditions(cond) {
