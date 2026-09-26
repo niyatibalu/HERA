@@ -1,0 +1,75 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { mockEvents, mockRecord } from '../mocks/record'
+import { mockProviderMatches } from '../mocks/care'
+
+// Exercises the client against docs/API_CONTRACT.md paths with a stubbed backend.
+async function loadClient() {
+  vi.resetModules()
+  vi.stubEnv('VITE_HERA_API_URL', 'http://api.test')
+  return (await import('../api/client')).api
+}
+
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+})
+
+describe('API client (live backend)', () => {
+  it('assembles the record from /patients/{id}, /health-events and /providers', async () => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      calls.push(url.replace('http://api.test', ''))
+      if (url.endsWith('/patients/maya-001')) return json(mockRecord.patient)
+      if (url.endsWith('/health-events')) return json(mockEvents)
+      if (url.includes('/providers?specialty=chronic_pelvic_pain')) return json(mockProviderMatches)
+      return json({ detail: 'not found' }, 404)
+    }))
+    const api = await loadClient()
+    const r = await api.getRecord('maya-001')
+    expect(r.source).toBe('live')
+    expect(r.data.patient.name).toBe('Maya Restrepo')
+    expect(r.data.providers.map((p) => p.provider_id)).toContain('prov-alt-best')
+    expect(calls).toEqual(['/patients/maya-001', '/patients/maya-001/health-events', '/patients/maya-001/providers?specialty=chronic_pelvic_pain'])
+  })
+
+  it('pins trend flags to the demo date and joins study titles', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      urls.push(url)
+      if (url.includes('/trend-flags')) return json([])
+      if (url.endsWith('/study-matches')) return json([{ study_id: 'study-a', candidate_id: 'c-1', eligibility_status: 'potentially_eligible', criteria_satisfied: [], criteria_unknown: [], reason: 'r' }])
+      if (url.endsWith('/studies')) return json([{ study_id: 'study-a', title: 'Chronic Pelvic Pain Study', description: 'd' }])
+      return json({}, 404)
+    }))
+    const api = await loadClient()
+    await api.getFlags('maya-001')
+    expect(urls[0]).toBe('http://api.test/patients/maya-001/trend-flags?as_of=2025-12-17')
+    const m = await api.getStudyMatches('maya-001')
+    expect(m.data[0].title).toBe('Chronic Pelvic Pain Study')
+  })
+
+  it('books a provider through /advance transitions, naming the provider in the note', async () => {
+    const bodies: { state: string; note: string }[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe('http://api.test/patients/maya-001/care-journeys/journey-0001/advance')
+      bodies.push(JSON.parse(String(init?.body)))
+      return json({ journey_id: 'journey-0001', state: bodies[bodies.length - 1].state, state_history: [] })
+    }))
+    const api = await loadClient()
+    await api.selectProvider('maya-001', 'journey-0001', mockProviderMatches[0])
+    expect(bodies.map((b) => b.state)).toEqual(['provider_matched', 'records_ready', 'appointment_scheduled'])
+    expect(bodies[0].note).toContain('Dr. Ifeoma Okafor')
+    expect(bodies[2].note).toContain('2025-12-29')
+  })
+
+  it('falls back to synthetic data when the backend is down', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch') }))
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = await loadClient()
+    const r = await api.getJourneys('maya-001')
+    expect(r.source).toBe('demo')
+    expect(r.data[0].journey_id).toBe('jr-specialist')
+  })
+})
