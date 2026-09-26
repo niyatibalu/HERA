@@ -50,8 +50,8 @@ describe('API client (live backend)', () => {
     expect(m.data[0].title).toBe('Chronic Pelvic Pain Study')
   })
 
-  it('books a provider through /advance transitions, naming the provider in the note', async () => {
-    const bodies: { state: string; note: string }[] = []
+  it('books a provider through /advance, sending provider_id and appointment_date', async () => {
+    const bodies: { state: string; note: string; provider_id?: string; appointment_date?: string }[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe('http://api.test/patients/maya-001/care-journeys/journey-0001/advance')
       bodies.push(JSON.parse(String(init?.body)))
@@ -60,8 +60,10 @@ describe('API client (live backend)', () => {
     const api = await loadClient()
     await api.selectProvider('maya-001', 'journey-0001', mockProviderMatches[0])
     expect(bodies.map((b) => b.state)).toEqual(['provider_matched', 'records_ready', 'appointment_scheduled'])
+    expect(bodies[0]).toMatchObject({ provider_id: 'prov-alt-best' })
     expect(bodies[0].note).toContain('Dr. Ifeoma Okafor')
-    expect(bodies[2].note).toContain('2025-12-29')
+    expect(bodies[1]).not.toHaveProperty('provider_id')
+    expect(bodies[2]).toMatchObject({ appointment_date: '2025-12-29' })
   })
 
   it('falls back to synthetic data when the backend is down', async () => {

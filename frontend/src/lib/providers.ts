@@ -45,14 +45,14 @@ export function originalReferralId(journey: CareJourney, providers: Provider[]) 
   return providers.find((p) => first?.note?.includes(p.name))?.provider_id ?? ORIGINAL_REFERRAL_PROVIDER_ID
 }
 
-/** The journey's current provider, from provider_id or, failing that, the provider named in the latest matching note. */
+/** The journey's current provider: provider_id, or (for journeys recorded before /advance accepted it) the provider named in the latest matching note. */
 export function journeyProviderId(journey: CareJourney, providers: Provider[]) {
   if (journey.provider_id) return journey.provider_id
   const note = [...journey.state_history].reverse().find((t) => t.state === 'provider_matched')?.note ?? ''
   return providers.find((p) => note.includes(p.name))?.provider_id
 }
 
-/** The appointment date, from appointment_date or the ISO date in the scheduling note. */
+/** The appointment date: appointment_date, or (for older journeys) the ISO date in the scheduling note. */
 export function journeyAppointmentDate(journey: CareJourney) {
   if (journey.appointment_date) return journey.appointment_date
   const note = [...journey.state_history].reverse().find((t) => t.state === 'appointment_scheduled')?.note ?? ''

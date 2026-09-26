@@ -88,12 +88,23 @@ function demoAdvance(journeyId: string, state: CareState, note?: string) {
   return j
 }
 
-/** Transitions recorded when a patient picks a provider: matched → records shared → scheduled. */
-function selectionSteps(providerName: string, appointmentDate: string): { state: CareState; note: string }[] {
+interface AdvanceBody {
+  state: CareState
+  note: string
+  provider_id?: string
+  appointment_date?: string
+}
+
+/**
+ * Transitions recorded when a patient picks a provider: matched → records shared → scheduled.
+ * provider_id and appointment_date travel as fields (docs/API_CONTRACT.md, advance); the notes
+ * are human-readable history.
+ */
+function selectionSteps(providerId: string, providerName: string, appointmentDate: string): AdvanceBody[] {
   return [
-    { state: 'provider_matched', note: `${REMATCH_NOTE_PREFIX} ${providerName}` },
+    { state: 'provider_matched', note: `${REMATCH_NOTE_PREFIX} ${providerName}`, provider_id: providerId },
     { state: 'records_ready', note: 'Longitudinal record shared with new provider' },
-    { state: 'appointment_scheduled', note: `Appointment booked for ${appointmentDate}` },
+    { state: 'appointment_scheduled', note: `Appointment booked for ${appointmentDate}`, appointment_date: appointmentDate },
   ]
 }
 
@@ -126,10 +137,10 @@ export const api = {
       () => mockProviderMatches,
     ),
 
-  /** Books a provider by advancing the journey. The backend's /advance takes {state, note}, so the note names the provider. */
+  /** Books a provider by advancing the journey, setting provider_id and appointment_date on the way. */
   async selectProvider(patientId: string, journeyId: string, match: ProviderMatch) {
     const appt = addDays(DEMO_TODAY, match.provider.wait_days)
-    const steps = selectionSteps(match.provider.name, appt)
+    const steps = selectionSteps(match.provider.provider_id, match.provider.name, appt)
     const r = await withFallback<CareJourney>(
       API_BASE,
       async (base) => {
