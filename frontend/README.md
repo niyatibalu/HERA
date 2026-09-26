@@ -58,12 +58,10 @@ When a URL is unset, or a request fails, the UI falls back to synthetic data in 
 
 Frontend-only presentation shapes (not part of the contract): `PatientRecord`, `ProviderOptions`, `RecordSource`, and the `RouteOption` proposal. See `src/types.ts`.
 
-### Open requests for backend (Person 2)
+### Backend notes
 
-1. **Seed the demo journey to match Maya's story.** The seeded journey starts today in `need_identified`, so the "specialist appointment not scheduled after 9 days" moment only appears with demo data. Suggested: `need_identified` → `provider_matched` (note naming Dr. Renee Whitfield) on 2025-12-08, then `stalled` with a reason.
-2. **Let `/advance` accept `provider_id` and `appointment_date`.** Until then, the frontend records the chosen provider and date in the transition notes (`"Re-matched by HERA to Dr. …"`, `"Appointment booked for YYYY-MM-DD"`) and reads them back.
-3. **Optional `as_of` on `/care-journeys`** so stall math uses the demo date, like `/trend-flags`.
-4. **Optional frontend-only additions to consider for the synthetic data:** `diagnosis` events (for ICD-10 codes on the record) and an `imaging` event for the ultrasound mentioned in ev-014. Demo mode includes these as `ev-f01`–`ev-f04`.
+- Backend PR #4 seeds Maya's journey at the Dec 8 referral with `provider_id` set to the original specialist, uses a fixed demo date (`2025-12-17`, same as `DEMO_TODAY`), and lets `/advance` accept `provider_id` and `appointment_date`. The frontend sends both when a provider is booked.
+- Open suggestion: add `diagnosis` events (for ICD-10 codes on the record) and an `imaging` event for the ultrasound mentioned in ev-014 to the synthetic data. Demo mode includes these as `ev-f01`–`ev-f04`.
 
 ## Product guardrails
 
