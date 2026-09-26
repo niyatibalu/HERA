@@ -41,8 +41,9 @@ def scenario() -> str:
     return os.environ.get("HERA_CONDITIONS_SCENARIO", "winter_storm").strip() or "winter_storm"
 
 
-HOST = os.environ.get("HERA_MAP_HOST", "127.0.0.1")
-PORT = int(os.environ.get("HERA_MAP_PORT", "8001"))
+# Hosting platforms (Railway, Render, Heroku) assign $PORT and need a public bind address.
+PORT = int(os.environ.get("HERA_MAP_PORT") or os.environ.get("PORT") or "8001")
+HOST = os.environ.get("HERA_MAP_HOST") or ("0.0.0.0" if os.environ.get("PORT") else "127.0.0.1")
 BACKEND_TIMEOUT_S = float(os.environ.get("HERA_BACKEND_TIMEOUT_S", "1.5"))
 LIVE_TIMEOUT_S = float(os.environ.get("HERA_LIVE_TIMEOUT_S", "2.5"))
 

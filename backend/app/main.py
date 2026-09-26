@@ -14,7 +14,7 @@ engine calls if the HTTP layer can't come up.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import lifecycle, mychart, patients, preferences, providers, research, symptoms, timeline
+from app.routes import demo, lifecycle, mychart, patients, preferences, providers, research, symptoms, timeline
 
 app = FastAPI(title="HERA API", version="0.1.0")
 
@@ -36,6 +36,7 @@ app.include_router(research.studies_router)
 app.include_router(preferences.router)
 app.include_router(symptoms.router)
 app.include_router(mychart.router)
+app.include_router(demo.router)
 
 
 @app.get("/health")
