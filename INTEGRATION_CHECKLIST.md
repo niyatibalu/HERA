@@ -37,9 +37,9 @@ Last run: 2026-09-26, on `feature/access-map` rebased on `main` (d2415a6), with
 | # | Owner | Item |
 |---|---|---|
 | 1 | Integration | ~~Merge `feature/frontend` into `main`~~: merged as PR #1 (`28fea51`) on 2026-09-26 after build, lint, 17/17 tests and a live end-to-end run. |
-| 2 | Frontend | `api.getRouteOptions` should also pass `provider_id` (`/routes?patient_id=…&journey_id=…&provider_id=…`). Without it, the map assumes the demo reroute (`prov-alt-best`), which is wrong if the user picks a different provider. |
-| 3 | Frontend | Demo mock in `src/mocks/care.ts` labels a route "Safer route". Team rule: never call a route safe. Suggest "Lower-risk route" or reuse the map's "HERA recommended". |
+| 2 | Frontend | ~~Pass `provider_id` to `/routes`~~: done in PR #3 (merged `113447a`). |
+| 3 | Frontend | ~~Remove "Safer route" wording~~: done in PR #3. |
 | 4 | Frontend | Optional: embed the full interactive map with `<iframe src="${VITE_HERA_MAP_URL}/map/?provider_id=…">` on the travel step, and a health-system dashboard from `/analytics/access`. |
-| 5 | Backend | Journey `state_history` uses the real `date.today()` (shows "Sep 26" in the UI) while the demo story is set in Dec 2025. Consider a fixed demo date, like the frontend's `DEMO_TODAY = 2025-12-17`. |
-| 6 | Backend | Seeded journey has `provider_id: null` and `/advance` doesn't record the chosen provider. The map works around this, but storing `provider_id` on `provider_matched` would make `/routes?journey_id=` exact. |
+| 5 | Backend | Fixed demo date: done in PR #4, **on hold** (see 6). |
+| 6 | Backend + Frontend | PR #4 seeds the journey with `provider_id: prov-original-specialist`, but the frontend's `selectProvider` still advances with only `{state, note}`. Merged alone, the journey keeps the Chicago provider after rebooking, so the travel step would route to Chicago (verified 2026-09-26). **Hold PR #4 until the frontend sends `provider_id` + `appointment_date` on `/advance`; merge the two back to back.** Also: `/advance` accepts an unknown `provider_id` without a 400. |
 | 7 | Everyone | Tag `demo-v1` on `main` after the final merge (see DEMO.md). |
