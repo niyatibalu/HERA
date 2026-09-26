@@ -51,7 +51,7 @@ export function JourneyPage() {
               </Link>
             }
           >
-            {currentStep(j)?.state === 'travel_planned' && !j.stalled && <TravelPlanner journey={j} />}
+            {currentStep(j)?.state === 'travel_planned' && !j.stalled && <TravelPlanner journey={j} providerId={journeyProviderId(j, record.data!.providers)} />}
           </CareJourney>
         ))}
       </div>
@@ -68,8 +68,8 @@ export function JourneyPage() {
   )
 }
 
-function TravelPlanner({ journey }: { journey: CareJourneyData }) {
-  const routes = useApi(() => api.getRouteOptions(DEMO_PATIENT_ID, journey.journey_id), `routes:${journey.journey_id}`)
+function TravelPlanner({ journey, providerId }: { journey: CareJourneyData; providerId?: string }) {
+  const routes = useApi(() => api.getRouteOptions(DEMO_PATIENT_ID, journey.journey_id, providerId), `routes:${journey.journey_id}:${providerId}`)
   const [selected, setSelected] = useState<string>()
   const [saving, setSaving] = useState(false)
   const opts = routes.data?.options ?? []

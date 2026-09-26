@@ -159,9 +159,12 @@ export const api = {
     return r
   },
 
-  /** PROPOSED map endpoint (feature/access-map). */
-  getRouteOptions: (patientId: string, journeyId: string) =>
-    withFallback<RouteOptionsResponse>(MAP_BASE, (base) => http(base, `/routes?patient_id=${patientId}&journey_id=${journeyId}`), () => mockRouteOptions),
+  /** GET {MAP_URL}/routes (docs/MAP_API.md, feature/access-map). `providerId` is the destination. */
+  getRouteOptions: (patientId: string, journeyId: string, providerId?: string) => {
+    const q = new URLSearchParams({ patient_id: patientId, journey_id: journeyId })
+    if (providerId) q.set('provider_id', providerId)
+    return withFallback<RouteOptionsResponse>(MAP_BASE, (base) => http(base, `/routes?${q}`), () => mockRouteOptions)
+  },
 
   getConsent: (patientId: string) =>
     withFallback<ResearchConsent>(API_BASE, (base) => http(base, `/patients/${patientId}/research-consent`), () => clone(demoConsent)),
