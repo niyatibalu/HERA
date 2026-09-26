@@ -1,0 +1,5 @@
+# HTTP layer only. The intelligence layer (app/engine, app/models,
+# app/adapters, app/data) is pure stdlib and has zero dependency on this
+# file -- tests run and the engine works with nothing installed.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
