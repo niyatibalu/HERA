@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend_venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+
+# Env
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
