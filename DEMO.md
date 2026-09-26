@@ -53,32 +53,29 @@ For a guaranteed-offline run: `HERA_DEMO_MODE=1 ./scripts/start_demo.sh`.
 
 ## Exact demo sequence (~4 min)
 
-1. **Overview → Health record** (`/`, `/record`): Maya, 29, 3 connected record sources, 20 events.
-2. **Timeline** (`/timeline`): pelvic pain across encounters and falling ferritin. Point at the
-   *persistent_symptom* flag: "for clinician review", never a diagnosis.
-3. **Care access** (`/access`): the original referral (Dr. Whitfield, Chicago) is out of
-   network, has a 61-day wait and is 122 mi away. Click **Find better options**, then choose **Dr. Okafor**
-   (in network, 12-day wait, 1.7 mi, speaks Spanish).
-4. **Care journey** (`/journey`): steps advance through matched → records shared → scheduled.
-   Under **Plan how to get there**, the map scores routes for the Dec 29 appointment during a
-   winter storm:
+1. **Overview** (`/`): Maya, 29. The referral is at risk of stalling. MyChart isn't connected yet.
+2. **Health record → Connect MyChart**: show what HERA asks to read (read-only), then **Allow and connect**.
+   20 records import from 3 health systems. Say it clearly: the connection is simulated and the data synthetic.
+3. **Symptom log** (`/symptoms`): Maya's own notes grouped by visit, before and after. Log a new
+   "before visit" note for the upcoming specialist visit. HERA stores the notes and doesn't interpret them.
+   (Trends aren't in HERA: patients already get them in MyChart.)
+4. **Care access** (`/access`): **Your care preferences** covers budget and financial assistance,
+   insurance, travel limit, expertise and minimum rating, availability, telehealth and clinician gender.
+   The original referral (Dr. Whitfield, Chicago) is out of network, has a 61-day wait and is 122 mi away.
+   Click **Find better options**. Dr. Okafor ranks first, with reasons tied to Maya's preferences
+   ("Within your budget", "Has appointments when you're free", "Matches your preference for a female
+   clinician"). Optional: **Edit preferences**, switch the clinician to *Male*, then **Save and re-rank**
+   to show the ranking change, and switch it back. Choose **Dr. Okafor**.
+5. **Care journey** (`/journey`): steps advance through matched → records shared → scheduled.
+   Under **Plan how to get there**, the embedded map scores routes for the Dec 29 appointment during a winter storm:
    - *Fastest route*: 18 min via Regent St, high weather risk, construction, unplowed side streets
-   - *HERA recommended*: 28 min via Park St & the Beltline. "Recommended because it uses
-     major roads, avoids reported construction, and has lower winter-weather exposure."
-   - *Public transit*: 31 min, 1 transfer, step-free. *Telehealth*: available Dec 19.
-   Pick **HERA recommended** → **Use HERA recommended**. The journey moves to *Travel planned*.
-   The embedded map above the cards shows each route. Clicking a card highlights that route on the
-   map, and clicking a route on the map selects its card.
-5. **Access map** (sidebar → *Access map*, inside the app): show the route
-   lines, the snow zone and the construction marker. Click a route to see its factor breakdown. Switch
-   *Travel conditions* to **Clear**: the recommendation flips back to the fastest route, which shows the
-   scoring reacting to conditions and not just picking the shortest route. Click **Dr. Renee Whitfield** to show the
-   original referral: over 3 hours each way, and the direct I-39/90 route crosses a sleet zone and construction.
-6. **Population access**: tick **Show regional care gaps**. Rural SW Wisconsin
-   (Dodgeville, Platteville, Richland Center) is a care gap. Across the 320 synthetic referrals,
-   220 patients were referred more than 30 mi away and 87 still were after HERA rerouting, and the average wait fell from 52.5 to 27.9 days.
-7. **Research** (`/research`): no study matches before consent. Consent, then one
-   *potentially eligible* match appears under a pseudonymous `candidate_id`. The patient chooses whether to learn more.
+   - *HERA recommended*: 28 min via Park St & the Beltline, "uses major roads, avoids reported
+     construction, and has lower winter-weather exposure"
+   Click cards to highlight routes on the map, then **Use HERA recommended**. The journey moves to *Travel planned*.
+6. **Access map** (sidebar): switch *Travel conditions* to **Clear** and the recommendation flips to the fastest
+   route. Tick **Show regional care gaps**: rural SW Wisconsin is a care gap (synthetic cohort).
+7. **Research** (`/research`): no study matches before consent. Consent, then one *potentially eligible*
+   match appears under a pseudonymous `candidate_id`.
 
 Always say "recommended based on current access and route conditions", never "safe".
 

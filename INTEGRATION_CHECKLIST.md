@@ -10,8 +10,10 @@ Last run: 2026-09-26, on `feature/access-map` rebased on `main` (d2415a6), with
 ## Demo flow
 
 - [x] patient record loads: backend 20 events for `maya-001`; frontend shows "Live from HERA backend"
-- [x] timeline loads: `GET /patients/maya-001/health-events`, sorted by date
-- [x] trend flag appears: 6 flags from `/trend-flags?as_of=2025-12-17`, all `action: clinician_review`
+- [x] MyChart connect (simulated): `/record` shows Connect → consent → 20 records imported from 3 systems
+- [x] symptom log: notes grouped by visit (before/after); add and delete work
+- [x] care preferences: saved preferences re-rank providers with preference-specific reasons
+- Timeline and trend flags were removed from the app (trends come from MyChart). The backend `/trend-flags` endpoint still exists.
 - [x] provider matches load: Okafor 92 vs. original referral Whitfield (out of network, 61 days, 122 mi)
 - [x] selected provider appears on map: `/map/?provider_id=prov-alt-best` and `/routes?provider_id=…`
 - [x] routes render: 3 in-person routes + telehealth, in the map and in frontend `RouteOptions`

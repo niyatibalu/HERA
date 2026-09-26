@@ -43,7 +43,9 @@ def main() -> int:
     backend_ok = check("backend /health", lambda: get(f"{a.backend}/health")[1]["status"])
     if backend_ok:
         check("backend Maya record", lambda: f"{len(get(f'{a.backend}/patients/maya-001/health-events')[1])} events")
-        check("backend trend flags", lambda: f"{len(get(f'{a.backend}/patients/maya-001/trend-flags?as_of=2025-12-17')[1])} flags")
+        check("backend care preferences", lambda: f"clinician={get(f'{a.backend}/patients/maya-001/preferences')[1]['provider_gender']}")
+        check("backend symptom log", lambda: f"{len(get(f'{a.backend}/patients/maya-001/symptom-log')[1])} notes")
+        check("backend MyChart (simulated)", lambda: get(f"{a.backend}/patients/maya-001/mychart")[1]["status"])
 
     map_ok = check("map /health", lambda: f"backend={get(f'{a.map}/health')[1]['backend']}")
 
