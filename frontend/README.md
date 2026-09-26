@@ -39,24 +39,31 @@ src/
 
 ## Backend integration
 
-Set these in `frontend/.env.local` to use live services. When unset, or when a request fails, the UI falls back to synthetic demo data so the demo never breaks.
+Follows `docs/API_CONTRACT.md` (owned by backend, on `feature/backend`). Copy `.env.example` to `.env.local`:
 
 ```
-VITE_HERA_API_URL=http://localhost:8000   # feature/backend
-VITE_HERA_MAP_URL=http://localhost:8001   # feature/access-map (route options)
+VITE_HERA_API_URL=http://localhost:8000   # backend: uvicorn app.main:app --port 8000
+VITE_HERA_MAP_URL=                        # access-map service, when available
 ```
 
-Endpoints the frontend currently expects. These are **provisional**: Person 2 owns the canonical contract in `API_CONTRACT.md`, and `src/types.ts` should be updated to match it.
+When a URL is unset, or a request fails, the UI falls back to synthetic data in `src/mocks/`, which mirrors the backend's synthetic patient, providers and studies. Every screen shows whether it is **Live from HERA backend** or **Showing synthetic demo data**.
 
-| Method | Path | Returns |
-|---|---|---|
-| GET | `/patients/{id}/record` | `HealthRecord` |
-| GET | `/patients/{id}/timeline` | `{ events: TimelineEvent[], flags: TrendFlag[] }` |
-| GET | `/patients/{id}/providers?care_need=` | `ProviderSearchResponse` |
-| GET | `/patients/{id}/journeys` | `CareJourney[]` |
-| GET | `/patients/{id}/journeys/{journey_id}/routes` (map service) | `RouteOptionsResponse` |
-| GET / POST | `/patients/{id}/research/consent` | `ResearchConsent` (POST body `{ consent_status }`) |
-| GET | `/patients/{id}/research/matches` | `StudyMatch[]` |
+| Screen | Endpoints used |
+|---|---|
+| Home, Record, Timeline | `GET /patients/{id}`, `/health-events`, `/providers?specialty=` (provider directory), `/trend-flags?as_of=2025-12-17` |
+| Care access | `GET /patients/{id}/providers?specialty=`, `POST /care-journeys/{id}/advance` ×3 when a provider is chosen |
+| Care journey | `GET /patients/{id}/care-journeys`, `POST …/advance {state: travel_planned}` |
+| Research | `GET/POST /patients/{id}/research-consent`, `GET /study-matches`, `GET /studies` (for titles) |
+| Travel options | `GET {MAP_URL}/routes?patient_id=&journey_id=` (**proposed**; not yet built by access-map) |
+
+Frontend-only presentation shapes (not part of the contract): `PatientRecord`, `ProviderOptions`, `RecordSource`, and the `RouteOption` proposal. See `src/types.ts`.
+
+### Open requests for backend (Person 2)
+
+1. **Seed the demo journey to match Maya's story.** The seeded journey starts today in `need_identified`, so the "specialist appointment not scheduled after 9 days" moment only appears with demo data. Suggested: `need_identified` → `provider_matched` (note naming Dr. Renee Whitfield) on 2025-12-08, then `stalled` with a reason.
+2. **Let `/advance` accept `provider_id` and `appointment_date`.** Until then, the frontend records the chosen provider and date in the transition notes (`"Re-matched by HERA to Dr. …"`, `"Appointment booked for YYYY-MM-DD"`) and reads them back.
+3. **Optional `as_of` on `/care-journeys`** so stall math uses the demo date, like `/trend-flags`.
+4. **Optional frontend-only additions to consider for the synthetic data:** `diagnosis` events (for ICD-10 codes on the record) and an `imaging` event for the ultrasound mentioned in ev-014. Demo mode includes these as `ev-f01`–`ev-f04`.
 
 ## Product guardrails
 

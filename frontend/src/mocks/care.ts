@@ -1,6 +1,6 @@
 // SYNTHETIC DATA — care journeys, provider matching and route options for the demo.
 // Providers mirror backend/app/data/providers.py.
-import type { CareJourney, ProviderSearchResponse, RouteOptionsResponse } from '../types'
+import type { CareJourney, ProviderMatch, RouteOptionsResponse } from '../types'
 import { mockProviders } from './record'
 
 const byId = (id: string) => mockProviders.find((p) => p.provider_id === id)!
@@ -14,7 +14,7 @@ export const mockJourneys: CareJourney[] = [
     provider_id: 'prov-original-specialist',
     appointment_date: null,
     stalled: true,
-    stalled_reason: 'The referred specialist has a 61-day wait, is out of network for MidwestCare PPO, and is 147 miles away.',
+    stalled_reason: 'The referred specialist has a 61-day wait, is out of network for MidwestCare PPO, and is 122 miles away.',
     state_history: [
       { state: 'need_identified', entered_at: '2025-12-08', note: 'Referral placed by Dr. Sarah Lindqvist' },
       { state: 'provider_matched', entered_at: '2025-12-08', note: 'Referred to Dr. Renee Whitfield (Chicago, IL)' },
@@ -42,44 +42,45 @@ export const mockJourneys: CareJourney[] = [
   },
 ]
 
-export const mockProviderSearch: ProviderSearchResponse = {
-  journey_id: 'jr-specialist',
-  need: 'Chronic pelvic pain specialist evaluation',
-  original: {
-    provider: byId('prov-original-specialist'),
-    match_score: 0.41,
-    distance_miles: 147,
-    in_network: false,
-    reasons: ['Relevant expertise in chronic pelvic pain and endometriosis'],
+/**
+ * The provider the Dec 8 referral originally went to. The backend's seeded journey does not carry
+ * a provider_id yet, so the frontend falls back to this id to show "original vs. alternatives".
+ */
+export const ORIGINAL_REFERRAL_PROVIDER_ID = 'prov-original-specialist'
+
+const PLAN = 'MidwestCare PPO'
+
+/**
+ * Mirrors GET /patients/maya-001/providers?specialty=chronic_pelvic_pain: every provider, ranked,
+ * scored with the backend's weights (backend/app/engine/matching.py).
+ */
+export const mockProviderMatches: ProviderMatch[] = [
+  {
+    provider: byId('prov-alt-best'), score: 92.3, distance_mi: 1.7,
+    match_reasons: ['Specialty match: chronic pelvic pain', `In-network for ${PLAN}`, 'Short wait: 12 days', 'Close to home: 1.7 mi', 'Telehealth available', 'Speaks es'],
+    access_tradeoffs: [],
   },
-  barriers: ['61-day wait', '147 miles away', 'Out of network', 'No telehealth'],
-  alternatives: [
-    {
-      provider: byId('prov-alt-best'),
-      match_score: 0.93,
-      distance_miles: 2,
-      in_network: true,
-      reasons: [
-        'Chronic pelvic pain and pelvic floor expertise matches the referral',
-        'In network for MidwestCare PPO: about $95',
-        'Seen in 12 days instead of 61',
-        'Speaks Spanish, Maya’s preferred language',
-        'Offers telehealth for follow-ups',
-      ],
-    },
-    {
-      provider: byId('prov-alt-ok'),
-      match_score: 0.64,
-      distance_miles: 7,
-      in_network: true,
-      reasons: [
-        'In network and nearby',
-        'General gynecology, with no specific chronic pelvic pain expertise',
-        '21-day wait',
-      ],
-    },
-  ],
-}
+  {
+    provider: byId('prov-pcp-01'), score: 75.0, distance_mi: 0,
+    match_reasons: [`In-network for ${PLAN}`, 'Short wait: 3 days', 'Close to home: 0.0 mi', 'Telehealth available', 'Speaks es'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is primary care)'],
+  },
+  {
+    provider: byId('prov-obgyn-01'), score: 72.1, distance_mi: 0.7,
+    match_reasons: [`In-network for ${PLAN}`, 'Short wait: 5 days', 'Close to home: 0.7 mi', 'Telehealth available'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is obgyn)', 'No confirmed es language support'],
+  },
+  {
+    provider: byId('prov-alt-ok'), score: 67.2, distance_mi: 6.1,
+    match_reasons: [`In-network for ${PLAN}`, 'Close to home: 6.1 mi', 'Telehealth available'],
+    access_tradeoffs: ['Not a specialty match for chronic pelvic pain (provider is gynecology)', 'No confirmed es language support'],
+  },
+  {
+    provider: byId('prov-original-specialist'), score: 36.6, distance_mi: 122.3,
+    match_reasons: ['Specialty match: chronic pelvic pain'],
+    access_tradeoffs: [`Out of network for ${PLAN}`, 'Long wait: 61 days', 'Far from home: 122.3 mi', 'High estimated cost: $420', 'No confirmed es language support'],
+  },
+]
 
 // Placeholder for the access-map teammate's routing output (feature/access-map).
 export const mockRouteOptions: RouteOptionsResponse = {

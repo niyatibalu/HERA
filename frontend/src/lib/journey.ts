@@ -106,6 +106,15 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
         journey_id: j.journey_id,
         action: { label: 'Find better options', to: `/access?journey=${j.journey_id}&show=options` },
       })
+    } else if (j.stall_warning) {
+      out.push({
+        id: j.journey_id,
+        tone: 'review',
+        title: `${humanize(j.need)} is at risk of stalling`,
+        detail: j.stall_warning,
+        journey_id: j.journey_id,
+        action: { label: 'Find better options', to: `/access?journey=${j.journey_id}&show=options` },
+      })
     } else if (step.state === 'travel_planned') {
       out.push({
         id: j.journey_id,

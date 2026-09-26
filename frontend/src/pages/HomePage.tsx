@@ -6,7 +6,8 @@ import { Icon } from '../components/Icon'
 import { TrendFlag } from '../components/TrendFlag'
 import { attentionItems, isComplete, journeySteps } from '../lib/journey'
 import { careTeam, groupEvents, providerLookup } from '../lib/record'
-import { daysBetween, formatDate, formatMonth, specialtyLabel } from '../lib/format'
+import { journeyAppointmentDate, journeyProviderId } from '../lib/providers'
+import { daysBetween, formatDate, formatMonth, humanize, specialtyLabel } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
 
 export function HomePage() {
@@ -22,9 +23,11 @@ export function HomePage() {
   const attention = attentionItems(journeys.data, DEMO_TODAY)
   const firstName = r.patient.name.split(' ')[0]
   const active = journeys.data.filter((j) => !isComplete(j))
+  const providerOf = (j: (typeof journeys.data)[number]) => provider(journeyProviderId(j, r.providers))
   const upcoming = journeys.data
-    .filter((j) => j.appointment_date && j.appointment_date >= DEMO_TODAY)
-    .sort((a, b) => a.appointment_date!.localeCompare(b.appointment_date!))
+    .map((j) => ({ j, date: journeyAppointmentDate(j) }))
+    .filter((x): x is { j: (typeof x)['j']; date: string } => !!x.date && x.date >= DEMO_TODAY)
+    .sort((a, b) => a.date.localeCompare(b.date))
   const openReferrals = g.referral.filter((x) => x.status !== 'completed')
   const recent = r.events.filter((e) => e.event_type !== 'diagnosis').sort((a, b) => b.event_date.localeCompare(a.event_date)).slice(0, 5)
   const flagged = new Set(flags.data.flatMap((f) => f.evidence.map((e) => e.event_id)))
@@ -67,11 +70,11 @@ export function HomePage() {
                 {active.map((j) => {
                   const steps = journeySteps(j)
                   const done = steps.filter((s) => s.status === 'complete').length
-                  const p = provider(j.provider_id)
+                  const p = providerOf(j)
                   return (
                     <li key={j.journey_id}>
                       <div className="list-main">
-                        <div className="list-title">{j.need}</div>
+                        <div className="list-title">{humanize(j.need)}</div>
                         <div className="list-meta">
                           {p ? `${p.name} · ` : ''}started {formatDate(j.state_history[0]?.entered_at ?? DEMO_TODAY)}
                         </div>
@@ -126,14 +129,14 @@ export function HomePage() {
               </div>
             ) : (
               <ul className="list">
-                {upcoming.map((j) => {
-                  const m = formatMonth(j.appointment_date!)
+                {upcoming.map(({ j, date }) => {
+                  const m = formatMonth(date)
                   return (
                     <li key={j.journey_id}>
                       <span className="date-chip date-chip-accent num"><span>{m.month}</span>{m.day}</span>
                       <div className="list-main">
-                        <div className="list-title">{j.need}</div>
-                        <div className="list-meta">{provider(j.provider_id)?.name}</div>
+                        <div className="list-title">{humanize(j.need)}</div>
+                        <div className="list-meta">{providerOf(j)?.name}</div>
                       </div>
                     </li>
                   )

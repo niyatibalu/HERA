@@ -2,6 +2,8 @@ import { useId, useState } from 'react'
 import type { StudyMatch } from '../types'
 import { Icon } from './Icon'
 
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
 /** A study the patient may be eligible for. Showing it never enrolls her or shares her identity. */
 export function StudyMatchCard({ match }: { match: StudyMatch }) {
   const [open, setOpen] = useState(false)
@@ -19,10 +21,10 @@ export function StudyMatchCard({ match }: { match: StudyMatch }) {
         <div className="why-h" style={{ marginTop: 6 }}>Potential match based on</div>
         <ul className="criteria">
           {match.criteria_satisfied.map((c) => (
-            <li key={c}><Icon name="check" size={14} /> {c}</li>
+            <li key={c}><Icon name="check" size={14} /> {sentence(c)}</li>
           ))}
           {match.criteria_unknown.map((c) => (
-            <li key={c} className="is-unknown"><Icon name="info" size={14} /> {c} <span className="muted">(not in your record)</span></li>
+            <li key={c} className="is-unknown"><Icon name="info" size={14} /> {sentence(c)} <span className="muted">(not in your record)</span></li>
           ))}
         </ul>
 

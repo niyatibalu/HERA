@@ -7,9 +7,9 @@ import { ResearchConsentCard, type ConsentView } from '../components/ResearchCon
 import { StudyMatchCard } from '../components/StudyMatchCard'
 import type { ResearchConsent } from '../types'
 
-function consentView(c: ResearchConsent & { asked?: boolean }): ConsentView {
+function consentView(c: ResearchConsent): ConsentView {
   if (c.consent && !c.revoked) return 'granted'
-  if (c.revoked || c.asked || c.consent_timestamp) return 'declined'
+  if (c.revoked || c.consent_timestamp) return 'declined'
   return 'not_asked'
 }
 

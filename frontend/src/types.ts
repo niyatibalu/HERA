@@ -1,7 +1,6 @@
 // Frontend view of the HERA data model.
-// Mirrors the backend dataclasses in backend/app/models (feature/backend) field-for-field,
-// snake_case throughout. Person 2 owns the canonical contract (docs/API_CONTRACT.md);
-// anything marked PROVISIONAL is a frontend proposal pending that contract.
+// Mirrors docs/API_CONTRACT.md (owned by backend, feature/backend) field-for-field, snake_case
+// throughout. Anything marked FRONTEND is a presentation-only shape assembled in the client.
 
 export type IsoDate = string
 
@@ -60,7 +59,7 @@ export interface Provider {
   expertise_tags: string[]
 }
 
-/** PROVISIONAL: presentation of the systems a record was assembled from. */
+/** FRONTEND: presentation of the systems a record was assembled from (simulated). */
 export interface RecordSource {
   source_id: string
   name: string
@@ -70,7 +69,7 @@ export interface RecordSource {
   simulated: boolean
 }
 
-/** PROVISIONAL: GET /patients/{id}/record */
+/** FRONTEND: GET /patients/{id} + /health-events + provider directory, combined. */
 export interface PatientRecord {
   patient: Patient
   events: HealthEvent[]
@@ -140,29 +139,32 @@ export interface CareJourney {
   appointment_date?: IsoDate | null
   stalled: boolean
   stalled_reason?: string | null
+  /** Server-computed warning when the current state is past its expected window. */
+  stall_warning?: string | null
 }
 
-/** PROVISIONAL: one ranked result from provider matching. */
+/** GET /patients/{id}/providers returns these, ranked highest score first. */
 export interface ProviderMatch {
   provider: Provider
-  match_score: number
-  distance_miles: number
-  in_network: boolean
-  reasons: string[]
+  /** 0–100 */
+  score: number
+  distance_mi: number
+  match_reasons: string[]
+  access_tradeoffs: string[]
 }
 
-/** PROVISIONAL: GET /patients/{id}/journeys/{journey_id}/provider-options */
-export interface ProviderSearchResponse {
+/** FRONTEND: the original referral vs. better-ranked alternatives for one care journey. */
+export interface ProviderOptions {
   journey_id: string
   need: string
-  original: ProviderMatch
+  original?: ProviderMatch
   barriers: string[]
   alternatives: ProviderMatch[]
 }
 
 // ---------- map (feature/access-map) ----------
 
-/** PROVISIONAL: shape requested from the access-map service. */
+/** PROPOSED for the access-map service (feature/access-map); not yet in the contract. */
 export interface RouteOption {
   route_id: string
   mode: 'fastest' | 'safer' | 'transit' | 'telehealth'
@@ -198,7 +200,7 @@ export interface StudyMatch {
   criteria_satisfied: string[]
   criteria_unknown: string[]
   reason: string
-  /** PROVISIONAL: joined from Study so the patient sees what the study is. */
+  /** FRONTEND: joined from GET /studies so the patient sees what the study is. */
   title?: string
   description?: string
 }

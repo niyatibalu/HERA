@@ -9,7 +9,7 @@ describe('Care access and care journey', () => {
     renderApp('/access?journey=jr-specialist')
     const original = await screen.findByRole('article', { name: /original referral: dr\. renee whitfield/i })
     expect(within(original).getByText('61 days')).toBeInTheDocument()
-    expect(within(original).getByText('147 mi')).toBeInTheDocument()
+    expect(within(original).getByText('122.3 mi')).toBeInTheDocument()
     expect(within(original).getByText('Out of network')).toBeInTheDocument()
     expect(screen.queryByRole('article', { name: /provider option/i })).not.toBeInTheDocument()
 
@@ -17,7 +17,7 @@ describe('Care access and care journey', () => {
     const options = screen.getAllByRole('article', { name: /provider option/i })
     expect(options).toHaveLength(2)
     const best = options[0]
-    for (const fact of ['12 days', '2 mi', 'In network', '$95', 'Available']) expect(within(best).getByText(fact)).toBeInTheDocument()
+    for (const fact of ['12 days', '1.7 mi', 'In network', '$95', 'Available']) expect(within(best).getByText(fact)).toBeInTheDocument()
     expect(within(best).getByText(/why hera ranked this option/i)).toBeInTheDocument()
     expect(within(best).getByText(/49 days sooner/i)).toBeInTheDocument()
   })

@@ -1,11 +1,13 @@
-// HERA API client.
-// When VITE_HERA_API_URL is set, requests go to the backend (feature/backend).
-// Otherwise, or when a request fails, the client falls back to synthetic demo data
-// so the patient journey always works on stage.
+// HERA API client, following docs/API_CONTRACT.md (feature/backend).
+// When VITE_HERA_API_URL is set, requests go to the backend. Otherwise, or when a request fails,
+// the client falls back to synthetic demo data so the patient journey always works on stage.
 import type {
   CareJourney,
+  CareState,
+  HealthEvent,
+  Patient,
   PatientRecord,
-  ProviderSearchResponse,
+  ProviderMatch,
   ResearchConsent,
   RouteOptionsResponse,
   StudyMatch,
@@ -13,9 +15,10 @@ import type {
 } from '../types'
 import { DEMO_TODAY, mockRecord } from '../mocks/record'
 import { mockFlags } from '../mocks/timeline'
-import { mockJourneys, mockProviderSearch, mockRouteOptions } from '../mocks/care'
+import { mockJourneys, mockProviderMatches, mockRouteOptions } from '../mocks/care'
 import { mockStudyMatches } from '../mocks/research'
 import { addDays } from '../lib/format'
+import { REMATCH_NOTE_PREFIX, requiredSpecialty } from '../lib/providers'
 
 export type DataSource = 'live' | 'demo'
 
@@ -38,121 +41,162 @@ export function subscribe(fn: () => void) {
 }
 const notify = () => listeners.forEach((fn) => fn())
 
+// ---------- transport ----------
+async function http<T>(base: string, path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${base}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } })
+  if (!res.ok) throw new Error(`${init?.method ?? 'GET'} ${path} → ${res.status}`)
+  return (await res.json()) as T
+}
+
+const post = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(body) })
+
+/** Runs `live` against a configured service; on any failure (or no service), uses `demo`. */
+async function withFallback<T>(base: string | undefined, live: (base: string) => Promise<T>, demo: () => T): Promise<ApiResult<T>> {
+  if (!base) return { data: demo(), source: 'demo' }
+  try {
+    return { data: await live(base), source: 'live' }
+  } catch (err) {
+    console.warn('[HERA] backend unavailable, using demo data:', err)
+    return { data: demo(), source: 'demo' }
+  }
+}
+
 // ---------- in-memory demo state ----------
 const clone = <T>(x: T): T => structuredClone(x)
+const freshConsent = (): ResearchConsent => ({ patient_id: DEMO_PATIENT_ID, consent: false, scope: 'de_identified_cohort_matching', revoked: false })
 let demoJourneys = clone(mockJourneys)
-let demoConsent: ResearchConsent = { patient_id: DEMO_PATIENT_ID, consent: false, scope: 'de_identified_cohort_matching', revoked: false }
-let demoConsentAsked = false
+let demoConsent = freshConsent()
 
 /** Test helper: reset in-memory demo state. */
 export function resetDemoState() {
   demoJourneys = clone(mockJourneys)
-  demoConsent = { patient_id: DEMO_PATIENT_ID, consent: false, scope: 'de_identified_cohort_matching', revoked: false }
-  demoConsentAsked = false
+  demoConsent = freshConsent()
 }
 
-async function request<T>(base: string | undefined, path: string, fallback: () => T, init?: RequestInit): Promise<ApiResult<T>> {
-  if (!base) return { data: fallback(), source: 'demo' }
-  try {
-    const res = await fetch(`${base}${path}`, {
-      ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
-    })
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-    return { data: (await res.json()) as T, source: 'live' }
-  } catch (err) {
-    console.warn(`[HERA] ${path} unavailable, using demo data:`, err)
-    return { data: fallback(), source: 'demo' }
-  }
-}
-
-function demoSelectProvider(journeyId: string, providerId: string): CareJourney {
+function demoJourney(journeyId: string) {
   const j = demoJourneys.find((x) => x.journey_id === journeyId)
-  const match = [mockProviderSearch.original, ...mockProviderSearch.alternatives].find((m) => m.provider.provider_id === providerId)
-  if (!j || !match) throw new Error('Unknown journey or provider')
-  const appt = addDays(DEMO_TODAY, match.provider.wait_days)
-  const keep = j.state_history.filter((t) => t.state === 'need_identified')
-  Object.assign(j, {
-    provider_id: providerId,
-    state: 'appointment_scheduled',
-    appointment_date: appt,
-    stalled: false,
-    stalled_reason: null,
-    state_history: [
-      ...keep,
-      { state: 'provider_matched', entered_at: DEMO_TODAY, note: `Re-matched by HERA to ${match.provider.name}` },
-      { state: 'records_ready', entered_at: DEMO_TODAY, note: 'Longitudinal record shared with new provider' },
-      { state: 'appointment_scheduled', entered_at: DEMO_TODAY, note: `Appointment booked for ${appt}` },
-    ],
-  } satisfies Partial<CareJourney>)
-  return clone(j)
+  if (!j) throw new Error(`Unknown journey ${journeyId}`)
+  return j
+}
+
+function demoAdvance(journeyId: string, state: CareState, note?: string) {
+  const j = demoJourney(journeyId)
+  j.state = state
+  j.stalled = false
+  j.stalled_reason = null
+  j.state_history.push({ state, entered_at: DEMO_TODAY, note })
+  return j
+}
+
+/** Transitions recorded when a patient picks a provider: matched → records shared → scheduled. */
+function selectionSteps(providerName: string, appointmentDate: string): { state: CareState; note: string }[] {
+  return [
+    { state: 'provider_matched', note: `${REMATCH_NOTE_PREFIX} ${providerName}` },
+    { state: 'records_ready', note: 'Longitudinal record shared with new provider' },
+    { state: 'appointment_scheduled', note: `Appointment booked for ${appointmentDate}` },
+  ]
 }
 
 export const api = {
+  /** GET /patients/{id} + /health-events, plus the provider directory from /providers. */
   getRecord: (patientId: string) =>
-    request<PatientRecord>(API_BASE, `/patients/${patientId}/record`, () => mockRecord),
+    withFallback<PatientRecord>(
+      API_BASE,
+      async (base) => {
+        const [patient, events] = await Promise.all([
+          http<Patient>(base, `/patients/${patientId}`),
+          http<HealthEvent[]>(base, `/patients/${patientId}/health-events`),
+        ])
+        const matches = await http<ProviderMatch[]>(base, `/patients/${patientId}/providers?specialty=${requiredSpecialty(events)}`)
+        return { patient, events, providers: matches.map((m) => m.provider), record_sources: mockRecord.record_sources }
+      },
+      () => mockRecord,
+    ),
 
   getFlags: (patientId: string) =>
-    request<TrendFlag[]>(API_BASE, `/patients/${patientId}/flags`, () => mockFlags),
+    withFallback<TrendFlag[]>(API_BASE, (base) => http(base, `/patients/${patientId}/trend-flags?as_of=${DEMO_TODAY}`), () => mockFlags),
 
   getJourneys: (patientId: string) =>
-    request<CareJourney[]>(API_BASE, `/patients/${patientId}/journeys`, () => clone(demoJourneys)),
+    withFallback<CareJourney[]>(API_BASE, (base) => http(base, `/patients/${patientId}/care-journeys`), () => clone(demoJourneys)),
 
-  getProviderOptions: (patientId: string, journeyId: string) =>
-    request<ProviderSearchResponse>(API_BASE, `/patients/${patientId}/journeys/${journeyId}/provider-options`, () => mockProviderSearch),
-
-  async selectProvider(patientId: string, journeyId: string, providerId: string) {
-    const r = await request<CareJourney>(
+  getProviderMatches: (patientId: string, specialty: string) =>
+    withFallback<ProviderMatch[]>(
       API_BASE,
-      `/patients/${patientId}/journeys/${journeyId}/provider`,
-      () => demoSelectProvider(journeyId, providerId),
-      { method: 'POST', body: JSON.stringify({ provider_id: providerId }) },
-    )
-    notify()
-    return r
-  },
+      (base) => http(base, `/patients/${patientId}/providers?specialty=${encodeURIComponent(specialty)}`),
+      () => mockProviderMatches,
+    ),
 
-  async planTravel(patientId: string, journeyId: string, routeId: string, routeLabel: string) {
-    const r = await request<CareJourney>(
+  /** Books a provider by advancing the journey. The backend's /advance takes {state, note}, so the note names the provider. */
+  async selectProvider(patientId: string, journeyId: string, match: ProviderMatch) {
+    const appt = addDays(DEMO_TODAY, match.provider.wait_days)
+    const steps = selectionSteps(match.provider.name, appt)
+    const r = await withFallback<CareJourney>(
       API_BASE,
-      `/patients/${patientId}/journeys/${journeyId}/travel`,
+      async (base) => {
+        let j: CareJourney | undefined
+        for (const s of steps) j = await http<CareJourney>(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(s))
+        return j!
+      },
       () => {
-        const j = demoJourneys.find((x) => x.journey_id === journeyId)
-        if (!j) throw new Error('Unknown journey')
-        j.state = 'travel_planned'
-        j.state_history = [...j.state_history.filter((t) => t.state !== 'travel_planned'), { state: 'travel_planned', entered_at: DEMO_TODAY, note: `${routeLabel} selected` }]
+        const j = demoJourney(journeyId)
+        for (const s of steps) demoAdvance(journeyId, s.state, s.note)
+        Object.assign(j, { provider_id: match.provider.provider_id, appointment_date: appt })
         return clone(j)
       },
-      { method: 'POST', body: JSON.stringify({ route_id: routeId }) },
     )
     notify()
     return r
   },
 
+  async planTravel(patientId: string, journeyId: string, routeLabel: string) {
+    const body = { state: 'travel_planned' as CareState, note: `${routeLabel} selected` }
+    const r = await withFallback<CareJourney>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(body)),
+      () => clone(demoAdvance(journeyId, body.state, body.note)),
+    )
+    notify()
+    return r
+  },
+
+  /** PROPOSED map endpoint (feature/access-map). */
   getRouteOptions: (patientId: string, journeyId: string) =>
-    request<RouteOptionsResponse>(MAP_BASE, `/routes?patient_id=${patientId}&journey_id=${journeyId}`, () => mockRouteOptions),
+    withFallback<RouteOptionsResponse>(MAP_BASE, (base) => http(base, `/routes?patient_id=${patientId}&journey_id=${journeyId}`), () => mockRouteOptions),
 
   getConsent: (patientId: string) =>
-    request<ResearchConsent & { asked?: boolean }>(API_BASE, `/patients/${patientId}/research/consent`, () => ({ ...demoConsent, asked: demoConsentAsked })),
+    withFallback<ResearchConsent>(API_BASE, (base) => http(base, `/patients/${patientId}/research-consent`), () => clone(demoConsent)),
 
   async setConsent(patientId: string, consent: boolean) {
-    const r = await request<ResearchConsent>(
+    const r = await withFallback<ResearchConsent>(
       API_BASE,
-      `/patients/${patientId}/research/consent`,
+      (base) => http(base, `/patients/${patientId}/research-consent`, post({ consent })),
       () => {
-        demoConsentAsked = true
-        const now = new Date().toISOString().slice(0, 10)
+        // Same semantics as backend/app/data/store.py: declining records a revocation.
+        const today = new Date().toISOString().slice(0, 10)
         demoConsent = consent
-          ? { ...demoConsent, consent: true, consent_timestamp: now, revoked: false, revoked_timestamp: null }
-          : { ...demoConsent, revoked: demoConsent.consent, revoked_timestamp: demoConsent.consent ? now : null, consent: false }
-        return demoConsent
+          ? { ...demoConsent, consent: true, consent_timestamp: today, revoked: false, revoked_timestamp: null }
+          : { ...demoConsent, revoked: true, revoked_timestamp: today }
+        return clone(demoConsent)
       },
-      { method: 'POST', body: JSON.stringify({ consent }) },
     )
     notify()
     return r
   },
 
+  /** GET /study-matches joined with GET /studies for titles. Always [] without active consent. */
   getStudyMatches: (patientId: string) =>
-    request<StudyMatch[]>(API_BASE, `/patients/${patientId}/research/matches`, () => (demoConsent.consent ? mockStudyMatches : [])),
+    withFallback<StudyMatch[]>(
+      API_BASE,
+      async (base) => {
+        const [matches, studies] = await Promise.all([
+          http<StudyMatch[]>(base, `/patients/${patientId}/study-matches`),
+          http<{ study_id: string; title: string; description: string }[]>(base, '/studies'),
+        ])
+        return matches.map((m) => {
+          const s = studies.find((x) => x.study_id === m.study_id)
+          return { ...m, title: s?.title, description: s?.description }
+        })
+      },
+      () => (demoConsent.consent && !demoConsent.revoked ? mockStudyMatches : []),
+    ),
 }

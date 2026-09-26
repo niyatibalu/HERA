@@ -2,12 +2,14 @@ import type { ReactNode } from 'react'
 import type { ProviderMatch } from '../types'
 import { Icon } from './Icon'
 import { formatCurrency, humanize, specialtyLabel } from '../lib/format'
+import { prettyReason } from '../lib/providers'
 
 const LANG: Record<string, string> = { en: 'English', es: 'Spanish' }
 
 /** One provider option with the facts that decide whether care is reachable, and why it ranks where it does. */
-export function ProviderMatchCard({ match, rank, variant = 'alternative', compareTo, action }: {
+export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alternative', compareTo, action }: {
   match: ProviderMatch
+  insurancePlan: string
   rank?: number
   variant?: 'original' | 'alternative'
   /** Original option, used to show how much better this one is. */
@@ -16,7 +18,8 @@ export function ProviderMatchCard({ match, rank, variant = 'alternative', compar
 }) {
   const p = match.provider
   const sooner = compareTo ? compareTo.provider.wait_days - p.wait_days : 0
-  const closer = compareTo ? compareTo.distance_miles - match.distance_miles : 0
+  const closer = compareTo ? Math.round(compareTo.distance_mi - match.distance_mi) : 0
+  const inNetwork = p.in_network_plans.includes(insurancePlan)
   const isOriginal = variant === 'original'
 
   return (
@@ -30,8 +33,8 @@ export function ProviderMatchCard({ match, rank, variant = 'alternative', compar
           </div>
         </div>
         {!isOriginal && (
-          <div className="match-score" aria-label={`Match score ${Math.round(match.match_score * 100)} out of 100`}>
-            <span className="num">{Math.round(match.match_score * 100)}</span>
+          <div className="match-score" aria-label={`Match score ${Math.round(match.score)} out of 100`}>
+            <span className="num">{Math.round(match.score)}</span>
             <small>match</small>
           </div>
         )}
@@ -39,8 +42,8 @@ export function ProviderMatchCard({ match, rank, variant = 'alternative', compar
 
       <dl className="provider-facts">
         <Fact label="Wait" bad={p.wait_days > 30} value={`${p.wait_days} days`} note={sooner > 0 ? `${sooner} days sooner` : undefined} />
-        <Fact label="Distance" bad={match.distance_miles > 60} value={`${match.distance_miles} mi`} note={closer > 20 ? `${closer} mi closer` : undefined} />
-        <Fact label="Insurance" bad={!match.in_network} value={match.in_network ? 'In network' : 'Out of network'} />
+        <Fact label="Distance" bad={match.distance_mi >= 40} value={`${match.distance_mi} mi`} note={closer > 20 ? `${closer} mi closer` : undefined} />
+        <Fact label="Insurance" bad={!inNetwork} value={inNetwork ? 'In network' : 'Out of network'} />
         <Fact label="Est. cost" bad={(p.estimated_cost_usd ?? 0) > 300} value={p.estimated_cost_usd != null ? formatCurrency(p.estimated_cost_usd) : '—'} />
         <Fact label="Telehealth" bad={!p.telehealth_available} value={p.telehealth_available ? 'Available' : 'Not offered'} />
       </dl>
@@ -51,10 +54,16 @@ export function ProviderMatchCard({ match, rank, variant = 'alternative', compar
         {p.languages.length > 1 && <span className="badge badge-info">{p.languages.map((l) => LANG[l] ?? l).join(' · ')}</span>}
       </div>
 
-      {!isOriginal && match.reasons.length > 0 && (
+      {!isOriginal && (match.match_reasons.length > 0 || match.access_tradeoffs.length > 0) && (
         <div className="why">
           <div className="why-h">Why HERA ranked this option</div>
-          <ul>{match.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+          <ul>{match.match_reasons.map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
+          {match.access_tradeoffs.length > 0 && (
+            <>
+              <div className="why-h" style={{ marginTop: 10 }}>Tradeoffs</div>
+              <ul className="tradeoffs">{match.access_tradeoffs.map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
+            </>
+          )}
         </div>
       )}
       {action && <div className="provider-action">{action}</div>}

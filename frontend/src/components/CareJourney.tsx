@@ -2,7 +2,10 @@ import type { ReactNode } from 'react'
 import type { CareJourney as CareJourneyData, CareState, Provider } from '../types'
 import { Icon, type IconName } from './Icon'
 import { daysInState, isComplete, journeySteps, type StepStatus } from '../lib/journey'
-import { formatDate } from '../lib/format'
+import { formatDate, humanize } from '../lib/format'
+import { journeyAppointmentDate } from '../lib/providers'
+
+const prettyNote = (note: string) => note.replace(/\d{4}-\d{2}-\d{2}/g, (d) => formatDate(d, { year: true }))
 
 const STATUS_ICON: Record<StepStatus, IconName | null> = { complete: 'check', in_progress: 'clock', stalled: 'pause', pending: null }
 const STALL_PHRASE: Partial<Record<CareState, string>> = {
@@ -26,15 +29,16 @@ export function CareJourney({ journey, provider, today, stalledAction, children 
   const steps = journeySteps(journey)
   const done = isComplete(journey)
   const stalled = steps.find((s) => s.status === 'stalled')
+  const appointment = journeyAppointmentDate(journey)
 
   return (
-    <section className={`card journey ${stalled ? 'is-stalled' : ''}`} aria-label={`Care journey: ${journey.need}`}>
+    <section className={`card journey ${stalled ? 'is-stalled' : ''}`} aria-label={`Care journey: ${humanize(journey.need)}`}>
       <header className="card-header">
         <div>
-          <h2 className="card-title">{journey.need}</h2>
+          <h2 className="card-title">{humanize(journey.need)}</h2>
           <div className="card-sub">
             {provider ? `${provider.name} · ` : ''}
-            {journey.appointment_date ? `Appointment ${formatDate(journey.appointment_date, { year: true })}` : 'No appointment yet'}
+            {appointment ? `Appointment ${formatDate(appointment, { year: true })}` : 'No appointment yet'}
           </div>
         </div>
         {done ? (
@@ -58,7 +62,7 @@ export function CareJourney({ journey, provider, today, stalledAction, children 
                 <span className="visually-hidden">{STATUS_TEXT[s.status]}. </span>
                 {s.date ? formatDate(s.date) : s.status === 'stalled' ? `${daysInState(journey, today)} days` : s.status === 'in_progress' ? 'Up next' : ''}
               </div>
-              {s.note && s.status !== 'pending' && <div className="step-note">{s.note}</div>}
+              {s.note && s.status !== 'pending' && <div className="step-note">{prettyNote(s.note)}</div>}
             </div>
           </li>
         ))}
@@ -70,6 +74,13 @@ export function CareJourney({ journey, provider, today, stalledAction, children 
           <div>
             <strong>{STALL_PHRASE[stalled.state] ?? `${stalled.label} has stalled.`}</strong> {journey.stalled_reason}
           </div>
+          {stalledAction}
+        </div>
+      )}
+      {!stalled && journey.stall_warning && (
+        <div className="journey-stall is-warning">
+          <Icon name="clock" size={16} />
+          <div><strong>At risk of stalling.</strong> {journey.stall_warning}</div>
           {stalledAction}
         </div>
       )}

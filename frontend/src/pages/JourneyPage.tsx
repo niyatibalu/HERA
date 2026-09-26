@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon'
 import { RouteOptions } from '../components/RouteOptions'
 import { currentStep, isComplete } from '../lib/journey'
 import { providerLookup } from '../lib/record'
+import { journeyProviderId } from '../lib/providers'
 import { formatDate } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
 import type { CareJourney as CareJourneyData } from '../types'
@@ -23,7 +24,8 @@ export function JourneyPage() {
 
   if (!journeys.data || !record.data) return <Loading label="Loading care journeys…" />
 
-  const provider = providerLookup(record.data.providers)
+  const lookup = providerLookup(record.data.providers)
+  const provider = (j: CareJourneyData) => lookup(journeyProviderId(j, record.data!.providers))
   const active = journeys.data.filter((j) => !isComplete(j))
   const complete = journeys.data.filter(isComplete)
 
@@ -41,7 +43,7 @@ export function JourneyPage() {
           <CareJourney
             key={j.journey_id}
             journey={j}
-            provider={provider(j.provider_id)}
+            provider={provider(j)}
             today={DEMO_TODAY}
             stalledAction={
               <Link className="btn btn-primary btn-sm" to={`/access?journey=${j.journey_id}&show=options`}>
@@ -58,7 +60,7 @@ export function JourneyPage() {
         <section className="section-gap stack">
           <h2 className="section-label">Completed pathways</h2>
           {complete.map((j) => (
-            <CareJourney key={j.journey_id} journey={j} provider={provider(j.provider_id)} today={DEMO_TODAY} />
+            <CareJourney key={j.journey_id} journey={j} provider={provider(j)} today={DEMO_TODAY} />
           ))}
         </section>
       )}
@@ -76,7 +78,7 @@ function TravelPlanner({ journey }: { journey: CareJourneyData }) {
   const confirm = async () => {
     if (!pick) return
     setSaving(true)
-    await api.planTravel(DEMO_PATIENT_ID, journey.journey_id, pick.route_id, pick.label)
+    await api.planTravel(DEMO_PATIENT_ID, journey.journey_id, pick.label)
     setSaving(false)
   }
 
