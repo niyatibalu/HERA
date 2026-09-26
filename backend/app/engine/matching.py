@@ -17,6 +17,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from app.models.preferences import CarePreferences
 from app.models.records import Location, Patient, Provider
 
 # Scoring weights. Sum does not need to equal any particular value -- scores
@@ -29,6 +30,24 @@ WEIGHT_DISTANCE = 15
 WEIGHT_COST = 10
 WEIGHT_TELEHEALTH = 5
 WEIGHT_ACCESSIBILITY = 5
+# Patient-preference components. An unset preference earns full neutral
+# credit, so it never changes the ranking on its own.
+WEIGHT_REVIEWS = 8
+WEIGHT_EXPERTISE = 6
+WEIGHT_SCHEDULE = 6
+WEIGHT_GENDER = 6
+MAX_TOTAL = (
+    WEIGHT_SPECIALTY_FIT + WEIGHT_NETWORK + WEIGHT_WAIT + WEIGHT_DISTANCE + WEIGHT_COST
+    + WEIGHT_TELEHEALTH + WEIGHT_ACCESSIBILITY + WEIGHT_REVIEWS + WEIGHT_EXPERTISE
+    + WEIGHT_SCHEDULE + WEIGHT_GENDER
+)
+
+SLOT_LABELS = {
+    "weekday_morning": "weekday mornings",
+    "weekday_afternoon": "weekday afternoons",
+    "weekday_evening": "weekday evenings",
+    "weekend": "weekends",
+}
 
 # Normalization ceilings: values at/beyond these get zero credit on that
 # component, rather than an unbounded penalty.
@@ -50,6 +69,7 @@ class MatchRequest:
     required_specialty: str
     prefer_telehealth: bool = False
     max_distance_mi: float | None = None
+    preferences: CarePreferences | None = None
 
 
 @dataclass
@@ -76,6 +96,10 @@ class ProviderMatchingEngine:
         reasons: list[str] = []
         tradeoffs: list[str] = []
         total = 0.0
+        prefs = request.preferences or CarePreferences(patient_id=patient.patient_id)
+        plan = prefs.insurance_plan or patient.insurance_plan
+        max_distance = request.max_distance_mi if request.max_distance_mi is not None else prefs.max_distance_mi
+        telehealth_pref = "prefer_telehealth" if request.prefer_telehealth else prefs.telehealth
 
         # -- specialty fit --------------------------------------------------
         if provider.specialty == request.required_specialty:
@@ -93,11 +117,11 @@ class ProviderMatchingEngine:
             )
 
         # -- network / insurance ---------------------------------------------
-        if patient.insurance_plan in provider.in_network_plans:
+        if plan in provider.in_network_plans:
             total += WEIGHT_NETWORK
-            reasons.append(f"In-network for {patient.insurance_plan}")
+            reasons.append(f"In-network for {plan}")
         else:
-            tradeoffs.append(f"Out of network for {patient.insurance_plan}")
+            tradeoffs.append(f"Out of network for {plan}")
 
         # -- wait time -----------------------------------------------------
         wait_score = max(0.0, 1 - provider.wait_days / WAIT_DAYS_CEILING)
@@ -110,29 +134,49 @@ class ProviderMatchingEngine:
         # -- distance --------------------------------------------------------
         distance_mi = round(_haversine_miles(patient.home_location, provider.location), 1)
         distance_score = max(0.0, 1 - distance_mi / DISTANCE_MI_CEILING)
+        remote_ok = telehealth_pref == "prefer_telehealth" and provider.telehealth_available
+        if max_distance is not None and distance_mi > max_distance and not remote_ok:
+            distance_score = 0.0
+            tradeoffs.append(f"Beyond your {max_distance:g} mi travel limit ({distance_mi} mi)")
+        elif distance_mi >= 40:
+            tradeoffs.append(f"Far from home: {distance_mi} mi")
         total += WEIGHT_DISTANCE * distance_score
         if distance_mi <= 15:
             reasons.append(f"Close to home: {distance_mi} mi")
-        elif distance_mi >= 40:
-            tradeoffs.append(f"Far from home: {distance_mi} mi")
-        if request.max_distance_mi is not None and distance_mi > request.max_distance_mi:
-            tradeoffs.append(f"Exceeds stated travel limit of {request.max_distance_mi} mi")
 
         # -- cost --------------------------------------------------------------
-        if provider.estimated_cost_usd is not None:
-            cost_score = max(0.0, 1 - provider.estimated_cost_usd / COST_USD_CEILING)
+        cost = provider.estimated_cost_usd
+        if cost is not None:
+            cost_score = max(0.0, 1 - cost / COST_USD_CEILING)
+            if prefs.max_cost_usd is not None:
+                if cost <= prefs.max_cost_usd:
+                    cost_score = max(cost_score, 0.9)
+                    reasons.append(f"Within your budget: ${cost} per visit")
+                elif prefs.needs_financial_assistance and provider.sliding_scale:
+                    cost_score = max(cost_score, 0.6)
+                    tradeoffs.append(f"Above your ${prefs.max_cost_usd} budget before financial assistance (${cost})")
+                else:
+                    cost_score = 0.0
+                    tradeoffs.append(f"Above your ${prefs.max_cost_usd} budget: ${cost} per visit")
+            elif cost >= 300:
+                tradeoffs.append(f"High estimated cost: ${cost}")
             total += WEIGHT_COST * cost_score
-            if provider.estimated_cost_usd >= 300:
-                tradeoffs.append(f"High estimated cost: ${provider.estimated_cost_usd}")
         else:
             total += WEIGHT_COST * 0.5  # unknown cost -- neutral credit
+        if prefs.needs_financial_assistance:
+            if provider.sliding_scale:
+                reasons.append("Offers sliding-scale fees / financial assistance")
+            else:
+                tradeoffs.append("No sliding-scale or financial assistance program listed")
 
         # -- telehealth -----------------------------------------------------
-        if request.prefer_telehealth and provider.telehealth_available:
+        if telehealth_pref == "prefer_telehealth" and provider.telehealth_available:
             total += WEIGHT_TELEHEALTH
-            reasons.append("Telehealth available")
-        elif request.prefer_telehealth and not provider.telehealth_available:
+            reasons.append("Telehealth available (your preference)")
+        elif telehealth_pref == "prefer_telehealth":
             tradeoffs.append("No telehealth option")
+        elif telehealth_pref == "in_person_only":
+            total += WEIGHT_TELEHEALTH  # every provider offers in-person visits
         elif provider.telehealth_available:
             total += WEIGHT_TELEHEALTH * 0.5
             reasons.append("Telehealth available")
@@ -155,9 +199,52 @@ class ProviderMatchingEngine:
         elif patient.preferred_language in provider.languages:
             reasons.append(f"Speaks {patient.preferred_language}")
 
+        # -- expertise the patient asked for ---------------------------------
+        if prefs.expertise:
+            skills = {provider.specialty, *provider.expertise_tags}
+            matched = [e for e in prefs.expertise if e in skills]
+            total += WEIGHT_EXPERTISE * len(matched) / len(prefs.expertise)
+            if matched:
+                reasons.append(f"Expertise you asked for: {', '.join(m.replace('_', ' ') for m in matched)}")
+            else:
+                tradeoffs.append(f"No listed expertise in {', '.join(e.replace('_', ' ') for e in prefs.expertise)}")
+        else:
+            total += WEIGHT_EXPERTISE
+
+        # -- patient reviews (synthetic) -------------------------------------
+        if provider.rating is not None:
+            total += WEIGHT_REVIEWS * provider.rating / 5
+            if prefs.min_rating is not None and provider.rating < prefs.min_rating:
+                tradeoffs.append(f"Rated {provider.rating:g}, below your minimum of {prefs.min_rating:g}")
+            elif provider.rating >= 4.5:
+                reasons.append(f"Rated {provider.rating:g}/5 by {provider.review_count} patients")
+        else:
+            total += WEIGHT_REVIEWS * 0.5
+
+        # -- schedule ---------------------------------------------------------
+        if prefs.availability:
+            overlap = [s for s in prefs.availability if s in provider.availability]
+            if overlap:
+                total += WEIGHT_SCHEDULE
+                reasons.append(f"Has appointments when you're free: {', '.join(SLOT_LABELS.get(s, s) for s in overlap)}")
+            else:
+                tradeoffs.append("No appointments at the times you said you're free")
+        else:
+            total += WEIGHT_SCHEDULE
+
+        # -- clinician gender preference -------------------------------------
+        if prefs.provider_gender != "no_preference":
+            if provider.gender == prefs.provider_gender:
+                total += WEIGHT_GENDER
+                reasons.append(f"Matches your preference for a {prefs.provider_gender} clinician")
+            else:
+                tradeoffs.append(f"Not a {prefs.provider_gender} clinician (your preference)")
+        else:
+            total += WEIGHT_GENDER
+
         return ProviderMatch(
             provider=provider,
-            score=round(total, 1),
+            score=round(100 * total / MAX_TOTAL, 1),
             distance_mi=distance_mi,
             match_reasons=reasons,
             access_tradeoffs=tradeoffs,
