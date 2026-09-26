@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from . import config
+from .analytics import access_analytics
 from .conditions import UnknownScenario, get_conditions, scenario_names
 from .geo import haversine_mi
 from .routing import route_candidates
@@ -128,11 +129,16 @@ def handle_routes(qs):
     }
 
 
+def handle_analytics(qs):
+    return access_analytics(_one(qs, "region_type"), _one(qs, "specialty"), _one(qs, "region"))
+
+
 ROUTES = {
     "/health": handle_health,
     "/world": handle_world,
     "/routes": handle_routes,
     "/conditions": handle_conditions,
+    "/analytics/access": handle_analytics,
 }
 
 

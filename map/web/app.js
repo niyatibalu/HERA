@@ -252,6 +252,40 @@
     if (initial) selectProvider(initial)
   }
 
+  // ---------- population analytics layer ----------
+  const gapLayer = L.layerGroup()
+  async function toggleGaps(on) {
+    if (!on) {
+      map.removeLayer(gapLayer)
+      $('gap-summary').hidden = true
+      return
+    }
+    if (!state.analytics) {
+      try {
+        state.analytics = await getJSON('/analytics/access')
+      } catch (e) {
+        $('gap-summary').hidden = false
+        $('gap-summary').innerHTML = `<span class="error">Analytics unavailable: ${esc(e.message || e)}</span>`
+        return
+      }
+      for (const r of state.analytics.by_region) {
+        const color = r.care_gap ? css('--risk') : r.pct_over_30_mi >= 50 ? css('--warn') : css('--good')
+        L.circle([r.lat, r.lon], { radius: 3000 + Math.sqrt(r.referrals) * 1800, color, weight: 1.5, fillColor: color, fillOpacity: 0.22 })
+          .bindTooltip(`<b>${esc(r.region)}</b> (${esc(r.region_type)})${r.care_gap ? ' · <b>care gap</b>' : ''}<br>
+            ${r.referrals} referrals · nearest specialist ~${r.avg_distance_to_nearest_specialist_mi} mi<br>
+            ${r.pct_over_30_mi}% referred &gt;30 mi · avg wait ${r.avg_wait_days} d<br>
+            ${r.pct_stalled}% stalled · telehealth ${r.telehealth_share_pct}%${r.public_transit_available ? '' : ' · no transit'}`)
+          .addTo(gapLayer)
+      }
+    }
+    const s = state.analytics.summary
+    $('gap-summary').hidden = false
+    $('gap-summary').textContent = `${state.analytics.cohort.referrals} synthetic referrals · ${s.patients_over_30_mi.original_referral} referred >30 mi (${s.patients_over_30_mi.after_hera} after HERA rerouting) · ${state.analytics.geographic_care_gaps.length} regional care gaps · avg wait ${s.wait_time_barriers.avg_wait_days_original} → ${s.wait_time_barriers.avg_wait_days_after_hera} days`
+    gapLayer.addTo(map)
+    map.fitBounds(L.latLngBounds(state.analytics.by_region.map((r) => [r.lat, r.lon])), { padding: [40, 40] })
+  }
+  $('gaps-toggle').addEventListener('change', (e) => toggleGaps(e.target.checked))
+
   window.HERA = { state, map, layers, getJSON, esc, humanize, css, selectProvider, JOURNEY_ID, PATIENT_ID }
   init()
 })()
