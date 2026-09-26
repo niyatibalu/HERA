@@ -6,6 +6,7 @@ import { attentionItems } from './lib/journey'
 import { DEMO_TODAY } from './mocks/record'
 import { HomePage } from './pages/HomePage'
 import { RecordPage } from './pages/RecordPage'
+import { TimelinePage } from './pages/TimelinePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
       <Route element={<Layout patient={record.data?.patient} sourceCount={record.data?.record_sources?.length} attentionCount={stalledCount} />}>
         <Route index element={<HomePage />} />
         <Route path="record" element={<RecordPage />} />
+        <Route path="timeline" element={<TimelinePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

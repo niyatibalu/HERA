@@ -20,12 +20,13 @@ const TREND_LABEL: Record<TrendFlagData['trend'], string> = {
   unknown: '',
 }
 
-export function TrendFlag({ flag, compact = false, active = false, onSelect, chart }: {
+export function TrendFlag({ flag, compact = false, active = false, onSelect, chart, children }: {
   flag: TrendFlagData
   compact?: boolean
   active?: boolean
   onSelect?: (flagId: string) => void
   chart?: ReactNode
+  children?: ReactNode
 }) {
   const months = monthsBetween(flag.first_seen, flag.last_seen)
   const title = flagTitle(flag)
@@ -51,6 +52,7 @@ export function TrendFlag({ flag, compact = false, active = false, onSelect, cha
           {active ? 'Showing evidence on timeline' : `Show ${flag.evidence.length} source ${flag.evidence.length === 1 ? 'record' : 'records'} on timeline`}
         </button>
       )}
+      {children}
     </article>
   )
 }
