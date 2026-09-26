@@ -39,7 +39,13 @@ else
   echo "frontend  SKIPPED: run 'cd frontend && npm ci' first (or frontend not merged yet)"
 fi
 
-sleep 3
+# Wait (up to 30s) for services to answer. A fresh clone's first start is slower.
+wait_for() {
+  for _ in $(seq 1 30); do curl -s -o /dev/null "$1" && return 0; sleep 1; done
+  echo "warning: $1 did not respond within 30s"
+}
+[ -n "$BACKEND_URL" ] && wait_for "$BACKEND_URL/health"
+wait_for "http://127.0.0.1:8001/health"
 python3 "$ROOT/map/tools/preflight.py" || true
 echo
 echo "Running. Ctrl-C to stop."
