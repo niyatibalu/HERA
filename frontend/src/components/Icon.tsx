@@ -25,6 +25,7 @@ const PATHS: Record<string, string> = {
   snow: 'M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7',
   info: 'M12 16v-5M12 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
   x: 'M6 6l12 12M18 6 6 18',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
   stethoscope: 'M6 3v6a4 4 0 0 0 8 0V3M10 13v2a5 5 0 0 0 10 0v-2M20 11a1.5 1.5 0 1 0 0-.01',
 }
 

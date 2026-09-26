@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { DataSourceNote, Loading, PageHeader } from '../components/common'
+import { AccessMapFrame } from '../components/AccessMapFrame'
 import { CareJourney } from '../components/CareJourney'
 import { Icon } from '../components/Icon'
 import { RouteOptions } from '../components/RouteOptions'
@@ -96,6 +97,9 @@ function TravelPlanner({ journey, providerId }: { journey: CareJourneyData; prov
           {saving ? 'Saving…' : pick ? `Use ${pick.label.toLowerCase()}` : 'Choose an option'}
         </button>
       </div>
+      {routes.source === 'live' && (
+        <AccessMapFrame patientId={DEMO_PATIENT_ID} providerId={routes.data?.provider_id ?? providerId} routeId={selected} onRouteSelect={setSelected} />
+      )}
       {opts.length > 0 && <RouteOptions options={opts} selected={selected} onSelect={setSelected} />}
     </div>
   )

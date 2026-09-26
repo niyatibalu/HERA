@@ -33,6 +33,9 @@ const MAP_BASE = env.VITE_HERA_MAP_URL?.replace(/\/$/, '')
 
 export const DEMO_PATIENT_ID = 'maya-001'
 
+/** Access map service base URL (VITE_HERA_MAP_URL), used to embed the interactive map. */
+export const MAP_URL = MAP_BASE
+
 // ---------- change notifications (so every screen reflects a mutation) ----------
 const listeners = new Set<() => void>()
 export function subscribe(fn: () => void) {

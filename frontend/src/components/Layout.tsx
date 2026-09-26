@@ -10,6 +10,7 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/timeline', label: 'Health timeline', icon: 'timeline' },
   { to: '/access', label: 'Care access', icon: 'access' },
   { to: '/journey', label: 'Care journey', icon: 'journey' },
+  { to: '/map', label: 'Access map', icon: 'map' },
   { to: '/research', label: 'Research', icon: 'research' },
 ]
 
