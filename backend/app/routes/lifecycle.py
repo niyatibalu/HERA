@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 
+from app.data.providers import PROVIDERS
 from app.data.store import store
 from app.engine.lifecycle import InvalidTransitionError
 from app.models.care import CareState
@@ -50,6 +51,8 @@ def advance_journey(patient_id: str, journey_id: str, body: AdvanceRequest):
     journey = store.journeys.get(journey_id)
     if journey is None or journey.patient_id != patient_id:
         raise HTTPException(status_code=404, detail="care journey not found")
+    if body.provider_id is not None and body.provider_id not in PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"unknown provider_id '{body.provider_id}'")
     try:
         journey = store.advance_journey(
             journey_id, body.state, body.note,

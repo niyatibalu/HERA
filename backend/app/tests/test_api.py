@@ -80,6 +80,21 @@ class TestHeraApi(unittest.TestCase):
         self.assertEqual(journeys[0]["provider_id"], "prov-original-specialist")
         self.assertEqual(journeys[0]["state_history"][0]["entered_at"], "2025-12-08")
 
+    def test_advance_rejects_unknown_provider_id_with_400(self):
+        journey_id = self.client.get("/patients/maya-001/care-journeys").json()[0]["journey_id"]
+        before = self.client.get("/patients/maya-001/care-journeys").json()[0]
+        resp = self.client.post(
+            f"/patients/maya-001/care-journeys/{journey_id}/advance",
+            json={"state": "provider_matched", "provider_id": "does-not-exist"},
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("does-not-exist", resp.json()["detail"])
+        # rejected request must not have been applied -- state and provider
+        # stay exactly as they were
+        after = self.client.get("/patients/maya-001/care-journeys").json()[0]
+        self.assertEqual(after["state"], before["state"])
+        self.assertEqual(after["provider_id"], before["provider_id"])
+
     def test_advance_accepts_provider_id_and_appointment_date(self):
         journey_id = self.client.get("/patients/maya-001/care-journeys").json()[0]["journey_id"]
         resp = self.client.post(

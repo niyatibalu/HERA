@@ -74,6 +74,11 @@ POST /patients/maya-001/care-journeys/journey-0001/advance
 `provider_id`/`appointment_date` on each journey — no need to parse them
 back out of `note` strings.
 
+An unknown `provider_id` (not present in the provider directory) is
+rejected with `400 {detail: "unknown provider_id '...'"}` and the journey
+is left completely unchanged — nothing is stored, and the state transition
+itself does not happen either.
+
 ## Demo patient
 
 **Maya, 29** (`patient_id: "maya-001"`). Pelvic pain first documented
