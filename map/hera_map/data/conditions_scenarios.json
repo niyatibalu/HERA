@@ -1,0 +1,28 @@
+{
+  "_comment": "SYNTHETIC, deterministic travel conditions for the demo. Not real forecasts or DOT reports. Select with HERA_CONDITIONS_SCENARIO or ?scenario= on /routes.",
+  "winter_storm": {
+    "summary": "Winter storm: snow in Madison, sleet on I-39/90",
+    "weather": [
+      {"zone_id": "wx-madison-west", "kind": "snow", "severity": 0.7, "lat": 43.0660, "lon": -89.4180, "radius_mi": 2.0, "label": "Snow, 3-5 in", "window": "Dec 29, 6am-2pm"},
+      {"zone_id": "wx-i39-sleet", "kind": "sleet", "severity": 0.8, "lat": 42.5200, "lon": -89.0000, "radius_mi": 28, "label": "Sleet / freezing rain", "window": "Dec 29 overnight"},
+      {"zone_id": "wx-sunprairie", "kind": "snow", "severity": 0.6, "lat": 43.1450, "lon": -89.3300, "radius_mi": 3.5, "label": "Blowing snow", "window": "Dec 29"},
+      {"zone_id": "wx-jefferson", "kind": "snow", "severity": 0.6, "lat": 43.0000, "lon": -88.8000, "radius_mi": 16, "label": "Snow squalls", "window": "Dec 29"},
+      {"zone_id": "wx-chicago", "kind": "snow", "severity": 0.3, "lat": 41.9500, "lon": -87.7500, "radius_mi": 15, "label": "Light snow", "window": "Dec 29"}
+    ],
+    "road_events": [
+      {"event_id": "rd-regent-construction", "kind": "construction", "lat": 43.0684, "lon": -89.4160, "radius_mi": 0.5, "severity": 0.5, "label": "Regent St lane closure", "road": "Regent", "delay_minutes": 5},
+      {"event_id": "rd-side-unplowed", "kind": "unplowed", "lat": 43.0650, "lon": -89.4300, "radius_mi": 0.5, "severity": 0.4, "label": "Unplowed side streets", "road": "side streets", "delay_minutes": 2},
+      {"event_id": "rd-i39-construction", "kind": "construction", "lat": 42.3000, "lon": -88.9900, "radius_mi": 4, "severity": 0.5, "label": "I-39/90 widening near Rockford", "road": "I-39/90", "delay_minutes": 12},
+      {"event_id": "rd-cv-unplowed", "kind": "unplowed", "lat": 43.1450, "lon": -89.3350, "radius_mi": 1.0, "severity": 0.5, "label": "County Rd CV not yet plowed", "road": "County Rd CV", "delay_minutes": 4},
+      {"event_id": "rd-us18-ice", "kind": "ice", "lat": 42.9950, "lon": -88.6500, "radius_mi": 6, "severity": 0.4, "label": "Icy patches on US-18", "road": "US-18", "delay_minutes": 6}
+    ]
+  },
+  "clear": {
+    "summary": "Clear conditions",
+    "weather": [],
+    "road_events": [
+      {"event_id": "rd-regent-construction", "kind": "construction", "lat": 43.0684, "lon": -89.4160, "radius_mi": 0.5, "severity": 0.5, "label": "Regent St lane closure", "road": "Regent", "delay_minutes": 5},
+      {"event_id": "rd-i39-construction", "kind": "construction", "lat": 42.3000, "lon": -88.9900, "radius_mi": 4, "severity": 0.5, "label": "I-39/90 widening near Rockford", "road": "I-39/90", "delay_minutes": 12}
+    ]
+  }
+}

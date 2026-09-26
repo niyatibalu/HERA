@@ -1,0 +1,89 @@
+{
+  "_comment": "SYNTHETIC DATA. Patients and providers mirror backend/app/data/ (feature/backend) so the map works when the backend is unreachable. Facility names are fabricated; town coordinates are approximate public geography used only for population-proximity scoring.",
+  "patients": [
+    {
+      "patient_id": "maya-001",
+      "name": "Maya Restrepo",
+      "insurance_plan": "MidwestCare PPO",
+      "home_location": {"lat": 43.0731, "lon": -89.4012, "address": "Madison, WI"},
+      "preferred_language": "es",
+      "mobility_constraints": [],
+      "accessibility_needs": []
+    },
+    {
+      "patient_id": "patient-002",
+      "name": "Jordan Kessler",
+      "insurance_plan": "MidwestCare HMO",
+      "home_location": {"lat": 43.0389, "lon": -87.9065, "address": "Milwaukee, WI"},
+      "preferred_language": "en",
+      "mobility_constraints": [],
+      "accessibility_needs": []
+    }
+  ],
+  "original_referrals": {
+    "maya-001": {"provider_id": "prov-original-specialist", "specialty": "chronic_pelvic_pain", "journey_id": "jr-specialist"}
+  },
+  "providers": [
+    {"provider_id": "prov-pcp-01", "name": "Dr. Alicia Foster", "specialty": "primary_care", "location": {"lat": 43.0731, "lon": -89.4012, "address": "Madison, WI"}, "wait_days": 3, "telehealth_available": true, "in_network_plans": ["MidwestCare PPO", "MidwestCare HMO"], "estimated_cost_usd": 40, "accessibility_features": ["wheelchair_accessible"], "languages": ["en", "es"], "expertise_tags": ["primary_care"]},
+    {"provider_id": "prov-obgyn-01", "name": "Dr. Sarah Lindqvist", "specialty": "obgyn", "location": {"lat": 43.08, "lon": -89.39, "address": "Madison, WI"}, "wait_days": 5, "telehealth_available": true, "in_network_plans": ["MidwestCare PPO"], "estimated_cost_usd": 150, "accessibility_features": ["wheelchair_accessible"], "languages": ["en"], "expertise_tags": ["obstetrics", "general_gynecology"]},
+    {"provider_id": "prov-original-specialist", "name": "Dr. Renee Whitfield", "specialty": "chronic_pelvic_pain", "location": {"lat": 41.8781, "lon": -87.6298, "address": "Chicago, IL"}, "wait_days": 61, "telehealth_available": false, "in_network_plans": [], "estimated_cost_usd": 420, "accessibility_features": [], "languages": ["en"], "expertise_tags": ["chronic_pelvic_pain", "endometriosis"]},
+    {"provider_id": "prov-alt-best", "name": "Dr. Ifeoma Okafor", "specialty": "chronic_pelvic_pain", "location": {"lat": 43.0625, "lon": -89.4306, "address": "Madison, WI"}, "wait_days": 12, "telehealth_available": true, "in_network_plans": ["MidwestCare PPO", "MidwestCare HMO"], "estimated_cost_usd": 95, "accessibility_features": ["wheelchair_accessible", "ground_floor_entrance"], "languages": ["en", "es"], "expertise_tags": ["chronic_pelvic_pain", "pelvic_floor_dysfunction"]},
+    {"provider_id": "prov-alt-ok", "name": "Dr. Michael Chen", "specialty": "gynecology", "location": {"lat": 43.15, "lon": -89.34, "address": "Sun Prairie, WI"}, "wait_days": 21, "telehealth_available": true, "in_network_plans": ["MidwestCare PPO"], "estimated_cost_usd": 140, "accessibility_features": [], "languages": ["en"], "expertise_tags": ["general_gynecology"]},
+    {"provider_id": "prov-alt-telehealth", "name": "Kara Whitmore, DPT", "specialty": "pelvic_floor_physical_therapy", "location": {"lat": 42.9633, "lon": -88.0034, "address": "Waukesha, WI"}, "wait_days": 6, "telehealth_available": true, "in_network_plans": ["MidwestCare PPO", "MidwestCare HMO"], "estimated_cost_usd": 70, "accessibility_features": ["wheelchair_accessible"], "languages": ["en"], "expertise_tags": ["chronic_pelvic_pain", "pelvic_floor_dysfunction"]},
+    {"provider_id": "prov-pcp-02", "name": "Dr. Ben Alvarez", "specialty": "primary_care", "location": {"lat": 43.0389, "lon": -87.9065, "address": "Milwaukee, WI"}, "wait_days": 4, "telehealth_available": true, "in_network_plans": ["MidwestCare HMO"], "estimated_cost_usd": 35, "accessibility_features": ["wheelchair_accessible"], "languages": ["en"], "expertise_tags": ["primary_care"]}
+  ],
+  "facilities": [
+    {"facility_id": "fac-h-capitol", "name": "Capitol Area Hospital", "kind": "hospital_er", "lat": 43.0766, "lon": -89.4300, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-southmad", "name": "South Madison Medical Center", "kind": "hospital_er", "lat": 43.0450, "lon": -89.3960, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-west", "name": "Westside Urgent Care", "kind": "urgent_care", "lat": 43.0560, "lon": -89.4420, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-eastwash", "name": "East Washington Urgent Care", "kind": "urgent_care", "lat": 43.0950, "lon": -89.3500, "accessibility_features": []},
+    {"facility_id": "fac-h-sunprairie", "name": "Sun Prairie Community Hospital", "kind": "hospital_er", "lat": 43.1830, "lon": -89.2250, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-cottage", "name": "Cottage Grove Clinic", "kind": "urgent_care", "lat": 43.0761, "lon": -89.1990, "accessibility_features": []},
+    {"facility_id": "fac-h-janesville", "name": "Janesville Regional Hospital", "kind": "hospital_er", "lat": 42.6828, "lon": -89.0187, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-beloit", "name": "Beloit Urgent Care", "kind": "urgent_care", "lat": 42.5083, "lon": -89.0318, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-rockford", "name": "Rockford Regional Medical Center", "kind": "hospital_er", "lat": 42.2711, "lon": -89.0940, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-elgin", "name": "Elgin Community Hospital", "kind": "hospital_er", "lat": 42.0354, "lon": -88.2826, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-schaumburg", "name": "Schaumburg Urgent Care", "kind": "urgent_care", "lat": 42.0334, "lon": -88.0834, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-chicago", "name": "Lakefront Medical Center", "kind": "hospital_er", "lat": 41.8950, "lon": -87.6200, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-lakemills", "name": "Lake Mills Urgent Care", "kind": "urgent_care", "lat": 43.0814, "lon": -88.9118, "accessibility_features": []},
+    {"facility_id": "fac-h-oconomowoc", "name": "Oconomowoc Hospital", "kind": "hospital_er", "lat": 43.1117, "lon": -88.4993, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-waukesha", "name": "Waukesha Memorial Hospital", "kind": "hospital_er", "lat": 43.0117, "lon": -88.2315, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-h-milwaukee", "name": "Milwaukee Metro Hospital", "kind": "hospital_er", "lat": 43.0450, "lon": -87.9365, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-kenosha", "name": "Kenosha Urgent Care", "kind": "urgent_care", "lat": 42.5847, "lon": -87.8212, "accessibility_features": ["wheelchair_accessible"]},
+    {"facility_id": "fac-uc-evansville", "name": "Evansville Rural Clinic", "kind": "clinic", "lat": 42.7803, "lon": -89.2993, "accessibility_features": []}
+  ],
+  "towns": [
+    {"name": "Madison", "lat": 43.0731, "lon": -89.4012, "population": 270000},
+    {"name": "Middleton", "lat": 43.0972, "lon": -89.5043, "population": 21000},
+    {"name": "Fitchburg", "lat": 42.9608, "lon": -89.4698, "population": 30000},
+    {"name": "Sun Prairie", "lat": 43.1836, "lon": -89.2137, "population": 36000},
+    {"name": "Cottage Grove", "lat": 43.0761, "lon": -89.1990, "population": 7700},
+    {"name": "Stoughton", "lat": 42.9169, "lon": -89.2179, "population": 13000},
+    {"name": "Edgerton", "lat": 42.8353, "lon": -89.0676, "population": 5900},
+    {"name": "Evansville", "lat": 42.7803, "lon": -89.2993, "population": 5700},
+    {"name": "Janesville", "lat": 42.6828, "lon": -89.0187, "population": 65000},
+    {"name": "Beloit", "lat": 42.5083, "lon": -89.0318, "population": 36000},
+    {"name": "Rockford", "lat": 42.2711, "lon": -89.0940, "population": 148000},
+    {"name": "Belvidere", "lat": 42.2639, "lon": -88.8443, "population": 25000},
+    {"name": "Marengo", "lat": 42.2492, "lon": -88.6084, "population": 7500},
+    {"name": "Elgin", "lat": 42.0354, "lon": -88.2826, "population": 114000},
+    {"name": "Schaumburg", "lat": 42.0334, "lon": -88.0834, "population": 78000},
+    {"name": "Chicago", "lat": 41.8781, "lon": -87.6298, "population": 2700000},
+    {"name": "Lake Mills", "lat": 43.0814, "lon": -88.9118, "population": 6300},
+    {"name": "Johnson Creek", "lat": 43.0761, "lon": -88.7743, "population": 3300},
+    {"name": "Oconomowoc", "lat": 43.1117, "lon": -88.4993, "population": 18000},
+    {"name": "Waukesha", "lat": 43.0117, "lon": -88.2315, "population": 71000},
+    {"name": "Milwaukee", "lat": 43.0389, "lon": -87.9065, "population": 570000},
+    {"name": "Racine", "lat": 42.7261, "lon": -87.7829, "population": 77000},
+    {"name": "Kenosha", "lat": 42.5847, "lon": -87.8212, "population": 99000},
+    {"name": "Whitewater", "lat": 42.8336, "lon": -88.7323, "population": 15000},
+    {"name": "Delavan", "lat": 42.6331, "lon": -88.6437, "population": 8500},
+    {"name": "Jefferson", "lat": 43.0056, "lon": -88.8073, "population": 8000},
+    {"name": "Fort Atkinson", "lat": 42.9289, "lon": -88.8371, "population": 12500},
+    {"name": "Huntley", "lat": 42.1681, "lon": -88.4281, "population": 27000},
+    {"name": "Waukegan", "lat": 42.3636, "lon": -87.8448, "population": 89000},
+    {"name": "Gurnee", "lat": 42.3703, "lon": -87.9020, "population": 31000},
+    {"name": "Northbrook", "lat": 42.1275, "lon": -87.8290, "population": 35000},
+    {"name": "Skokie", "lat": 42.0324, "lon": -87.7416, "population": 67000}
+  ]
+}

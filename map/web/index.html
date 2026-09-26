@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HERA Care Access Map</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="panel" aria-label="Care access">
+      <header class="panel-head">
+        <div class="eyebrow">HERA · Care access map</div>
+        <h1 id="patient-title">Loading…</h1>
+        <p class="lede" id="patient-sub"></p>
+        <div class="chips" id="status-chips"></div>
+        <label class="cond-select">Travel conditions
+          <select id="scenario">
+            <option value="winter_storm">Winter storm (demo)</option>
+            <option value="clear">Clear (demo)</option>
+          </select>
+        </label>
+      </header>
+
+      <section class="block" aria-labelledby="prov-h">
+        <h2 id="prov-h">Providers</h2>
+        <p class="hint">Select a provider to see ways to get there.</p>
+        <ul class="providers" id="provider-list"></ul>
+      </section>
+
+      <section class="block" aria-labelledby="gap-h">
+        <h2 id="gap-h">Population access</h2>
+        <label class="cond-select"><input type="checkbox" id="gaps-toggle" /> Show regional care gaps (synthetic cohort)</label>
+        <p class="hint" id="gap-summary" hidden></p>
+      </section>
+
+      <section class="block" id="routes-block" hidden aria-labelledby="routes-h">
+        <h2 id="routes-h">Ways to reach care</h2>
+        <p class="hint" id="routes-sub"></p>
+        <div id="route-list" class="route-list" role="radiogroup" aria-label="Route options"></div>
+        <p class="disclaimer" id="disclaimer"></p>
+      </section>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="map" role="application" aria-label="Map of patient, providers and routes"></div>
+      <div class="map-banner" id="offline-banner" hidden>Offline basemap: street tiles unavailable. Routes, providers and conditions still shown.</div>
+      <div class="legend" id="legend">
+        <div><span class="dot dot-patient"></span>Patient home</div>
+        <div><span class="dot dot-original"></span>Original referral</div>
+        <div><span class="dot dot-alt"></span>Alternative provider</div>
+        <div><span class="dot dot-hospital"></span>Hospital / ER</div>
+        <div><span class="dot dot-urgent"></span>Urgent care / clinic</div>
+        <div><span class="line" style="background:var(--r-safer)"></span>Lower-risk / alternative</div>
+        <div><span class="line" style="background:var(--r-fastest)"></span>Fastest</div>
+        <div><span class="line" style="background:var(--r-transit)"></span>Public transit</div>
+      </div>
+    </main>
+  </div>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
