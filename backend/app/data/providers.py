@@ -84,6 +84,22 @@ PROVIDERS: dict[str, Provider] = {
         languages=["en"],
         expertise_tags=["general_gynecology"],
     ),
+    # Telehealth-first option: no clinic to travel to at all. Useful for
+    # showing the matching engine's telehealth weighting against a
+    # patient with tight travel constraints.
+    "prov-alt-telehealth": Provider(
+        provider_id="prov-alt-telehealth",
+        name="Kara Whitmore, DPT",
+        specialty="pelvic_floor_physical_therapy",
+        location=Location(lat=42.9633, lon=-88.0034, address="Waukesha, WI"),
+        wait_days=6,
+        telehealth_available=True,
+        in_network_plans=["MidwestCare PPO", "MidwestCare HMO"],
+        estimated_cost_usd=70,
+        accessibility_features=["wheelchair_accessible"],
+        languages=["en"],
+        expertise_tags=["chronic_pelvic_pain", "pelvic_floor_dysfunction"],
+    ),
     "prov-pcp-02": Provider(
         provider_id="prov-pcp-02",
         name="Dr. Ben Alvarez",
