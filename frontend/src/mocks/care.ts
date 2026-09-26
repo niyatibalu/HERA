@@ -1,0 +1,133 @@
+// SYNTHETIC DATA — provider search, care journeys and route options for the demo.
+import type { CareJourney, ProviderSearchResponse, RouteOptionsResponse } from '../types'
+
+export const mockProviderSearch: ProviderSearchResponse = {
+  care_need: 'Gynecology — pelvic pain & endometriosis evaluation',
+  original_provider: {
+    provider_id: 'prov-0',
+    name: 'Dr. Karen Whitfield, MD',
+    specialty: 'Gynecology',
+    facility: 'Twin Ports Women’s Specialty Center',
+    expertise: ['Endometriosis', 'Minimally invasive surgery'],
+    wait_days: 43,
+    distance_miles: 58,
+    in_network: false,
+    insurance_note: 'Out of network for NorthStar Health PPO',
+    estimated_cost_usd: 640,
+    telehealth_available: false,
+    accessibility: [],
+    next_available_date: '2026-11-08',
+    match_score: 0.52,
+    match_reasons: [],
+  },
+  barriers: ['43-day wait', '58 miles each way', 'Out of network'],
+  alternatives: [
+    {
+      provider_id: 'prov-1',
+      name: 'Dr. Nadia Okonkwo, MD',
+      specialty: 'Gynecology',
+      facility: 'Northland Regional Health — Virginia Clinic',
+      expertise: ['Chronic pelvic pain', 'Endometriosis', 'Pelvic ultrasound on site'],
+      wait_days: 7,
+      distance_miles: 24,
+      in_network: true,
+      insurance_note: 'In network · $40 specialist copay',
+      estimated_cost_usd: 40,
+      telehealth_available: true,
+      accessibility: ['Step-free entrance', 'Ground-floor imaging'],
+      next_available_date: '2026-10-03',
+      match_score: 0.94,
+      match_reasons: [
+        'Focus on chronic pelvic pain and endometriosis matches the referral',
+        'Same health system as her OB/GYN, so records are already shared',
+        'Ultrasound can be done at the same visit',
+      ],
+    },
+    {
+      provider_id: 'prov-2',
+      name: 'Dr. Samuel Reyes, DO',
+      specialty: 'Gynecology',
+      facility: 'Arrowhead Women’s Health (Telehealth)',
+      expertise: ['Pelvic pain', 'Hormonal therapy management'],
+      wait_days: 3,
+      distance_miles: 0,
+      in_network: true,
+      insurance_note: 'In network · $25 telehealth copay',
+      estimated_cost_usd: 25,
+      telehealth_available: true,
+      accessibility: ['Video or phone visit'],
+      next_available_date: '2026-09-29',
+      match_score: 0.81,
+      match_reasons: [
+        'Soonest available, and no travel needed',
+        'Can review her longitudinal history before an in-person exam',
+        'Cannot perform a pelvic exam or ultrasound remotely',
+      ],
+    },
+    {
+      provider_id: 'prov-3',
+      name: 'Dr. Leah Johansson, MD',
+      specialty: 'Gynecology & pelvic floor',
+      facility: 'Duluth Pelvic Health Institute',
+      expertise: ['Endometriosis excision', 'Pelvic floor dysfunction'],
+      wait_days: 19,
+      distance_miles: 101,
+      in_network: true,
+      insurance_note: 'In network · $40 specialist copay',
+      estimated_cost_usd: 40,
+      telehealth_available: false,
+      accessibility: ['Step-free entrance', 'Accessible exam tables'],
+      next_available_date: '2026-10-15',
+      match_score: 0.72,
+      match_reasons: [
+        'Deepest subspecialty expertise in endometriosis',
+        'Longer drive, often through winter weather',
+      ],
+    },
+  ],
+}
+
+export const mockJourneys: CareJourney[] = [
+  {
+    journey_id: 'jr-gyn',
+    care_need: 'Gynecology evaluation — persistent pelvic pain',
+    started_date: '2026-09-17',
+    provider_name: 'Dr. Nadia Okonkwo',
+    appointment_date: '2026-10-03',
+    steps: [
+      { step_id: 's1', key: 'need_identified', label: 'Need identified', status: 'complete', completed_date: '2026-09-17', detail: 'Referral placed by Dr. Priya Raman' },
+      { step_id: 's2', key: 'provider_matched', label: 'Provider matched', status: 'complete', completed_date: '2026-09-18', detail: 'Dr. Nadia Okonkwo · in network · 24 mi' },
+      { step_id: 's3', key: 'records_shared', label: 'Records shared', status: 'complete', completed_date: '2026-09-18', detail: '7 encounters, 4 lab series, 2 imaging studies' },
+      { step_id: 's4', key: 'appointment_scheduled', label: 'Appointment scheduled', status: 'complete', completed_date: '2026-09-19', detail: 'Fri, Oct 3 · 10:30 AM' },
+      { step_id: 's5', key: 'travel_planned', label: 'Travel planned', status: 'in_progress', due_date: '2026-10-02', detail: 'Snow possible Oct 3. Compare route options.' },
+      { step_id: 's6', key: 'appointment_completed', label: 'Appointment completed', status: 'pending', due_date: '2026-10-03' },
+      { step_id: 's7', key: 'follow_up_complete', label: 'Follow-up complete', status: 'pending' },
+    ],
+  },
+  {
+    journey_id: 'jr-us',
+    care_need: 'Pelvic ultrasound',
+    started_date: '2026-09-17',
+    steps: [
+      { step_id: 'u1', key: 'need_identified', label: 'Need identified', status: 'complete', completed_date: '2026-09-17', detail: 'Recommended by Dr. Priya Raman' },
+      { step_id: 'u2', key: 'provider_matched', label: 'Provider matched', status: 'complete', completed_date: '2026-09-18', detail: 'Northland Regional Imaging' },
+      { step_id: 'u3', key: 'records_shared', label: 'Records shared', status: 'complete', completed_date: '2026-09-18' },
+      { step_id: 'u4', key: 'appointment_scheduled', label: 'Appointment scheduled', status: 'stalled', stalled_days: 9, detail: 'Not scheduled after 9 days. Imaging office has not confirmed a slot.' },
+      { step_id: 'u5', key: 'travel_planned', label: 'Travel planned', status: 'pending' },
+      { step_id: 'u6', key: 'appointment_completed', label: 'Appointment completed', status: 'pending' },
+      { step_id: 'u7', key: 'follow_up_complete', label: 'Results reviewed', status: 'pending' },
+    ],
+  },
+]
+
+// Placeholder for the access-map teammate's routing output (feature/access-map).
+export const mockRouteOptions: RouteOptionsResponse = {
+  destination: 'Northland Regional Health — Virginia Clinic',
+  appointment_date: '2026-10-03',
+  options: [
+    { route_id: 'r-fast', mode: 'fastest', label: 'Fastest route', duration_minutes: 38, summary: 'County Rd 21 and a rural two-lane stretch', conditions: ['Snow expected', '14 mi with no services'], recommended: false },
+    { route_id: 'r-safe', mode: 'safer', label: 'Safer route', duration_minutes: 44, summary: 'MN-169 and US-53, both major roads', conditions: ['Plowed priority roads', 'Passes 2 medical facilities'], recommended: true },
+    { route_id: 'r-transit', mode: 'transit', label: 'Public transit', duration_minutes: 61, summary: 'Arrowhead Transit dial-a-ride', conditions: ['Book 24 h ahead'], recommended: false },
+    { route_id: 'r-tele', mode: 'telehealth', label: 'Telehealth alternative', summary: 'Pre-visit consult with Dr. Samuel Reyes', conditions: ['Available Sep 29'], recommended: false },
+  ],
+}

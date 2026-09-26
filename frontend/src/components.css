@@ -1,0 +1,38 @@
+/* Component-level styles. Tokens live in index.css. */
+.muted { color: var(--muted); }
+.note { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+.section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+/* Date chip used in lists */
+.date-chip {
+  flex: none; width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; font-weight: 650; line-height: 1.1;
+}
+.date-chip span { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }
+.date-chip-accent { background: var(--accent-soft); border-color: transparent; color: var(--accent-ink); }
+.date-chip-accent span { color: var(--accent-ink); }
+.flag-dot { color: var(--review); flex: none; margin-top: 3px; }
+
+/* Segmented journey progress bar */
+.progress { display: flex; gap: 2px; margin-top: 10px; max-width: 320px; }
+.progress-seg { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+.progress-seg.is-complete { background: var(--accent); }
+.progress-seg.is-in_progress { background: #8cc4bf; }
+.progress-seg.is-stalled { background: var(--stalled); }
+
+/* ---------- TrendFlag ---------- */
+.trend-flag {
+  border: 1px solid var(--review-line); border-left: 3px solid var(--review); background: #fffdf8;
+  border-radius: var(--radius-sm); padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+}
+.trend-flag.is-active { box-shadow: 0 0 0 2px var(--review-line); }
+.trend-flag-compact { border: 0; border-left: 3px solid var(--review); background: transparent; padding: 0 0 0 14px; border-radius: 0; }
+.trend-flag-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
+.trend-source { font-size: 12px; color: var(--muted); margin-left: auto; }
+.trend-title { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
+.trend-summary { font-size: 14px; color: var(--ink-2); }
+.trend-review { font-size: 13px; color: var(--ink); display: flex; gap: 6px; align-items: flex-start; }
+.trend-review svg { margin-top: 3px; color: var(--review); flex: none; }
+.trend-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.trend-flag .btn-ghost { margin-left: -8px; }
+.nowrap { white-space: nowrap; }
