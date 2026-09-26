@@ -176,6 +176,8 @@ export interface RouteOption {
 }
 
 export interface RouteOptionsResponse {
+  /** Destination provider (access map returns it; see docs/MAP_API.md). */
+  provider_id?: string
   destination: string
   appointment_date: IsoDate
   options: RouteOption[]

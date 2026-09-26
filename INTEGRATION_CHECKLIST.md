@@ -39,7 +39,7 @@ Last run: 2026-09-26, on `feature/access-map` rebased on `main` (d2415a6), with
 | 1 | Integration | ~~Merge `feature/frontend` into `main`~~: merged as PR #1 (`28fea51`) on 2026-09-26 after build, lint, 17/17 tests and a live end-to-end run. |
 | 2 | Frontend | ~~Pass `provider_id` to `/routes`~~: done in PR #3 (merged `113447a`). |
 | 3 | Frontend | ~~Remove "Safer route" wording~~: done in PR #3. |
-| 4 | Frontend | Optional: embed the full interactive map with `<iframe src="${VITE_HERA_MAP_URL}/map/?provider_id=…">` on the travel step, and a health-system dashboard from `/analytics/access`. |
+| 4 | Integration | Map inside the app: done. The compact map is embedded in the care journey travel step (synced with the route cards), and the full map is an *Access map* page in the sidebar. If the map service is down, the travel step shows cards only and the page shows a notice. A separate health-system dashboard page is still not built (care gaps show on the map). |
 | 5 | Backend | Fixed demo date: PR #4. Verified: journey starts 2025-12-08, steps dated 2025-12-17. |
 | 6 | Backend + Frontend | Chosen provider stored on journey: PR #4 (`50d363a`) + PR #6 (`ea9ad44`). Verified together with this branch on 2026-09-26: backend 65/65, map 32/32, frontend 18/18; booking Dr. Okafor sets `provider_id: prov-alt-best` and `appointment_date: 2025-12-29`; `/routes?journey_id=` resolves to Dr. Okafor; unknown `provider_id` → 400. **Merge #4 and #6 back to back.** |
 | 7 | Everyone | Tag `demo-v1` on `main` after the final merge (see DEMO.md). |

@@ -67,7 +67,9 @@ For a guaranteed-offline run: `HERA_DEMO_MODE=1 ./scripts/start_demo.sh`.
      major roads, avoids reported construction, and has lower winter-weather exposure."
    - *Public transit*: 31 min, 1 transfer, step-free. *Telehealth*: available Dec 19.
    Pick **HERA recommended** → **Use HERA recommended**. The journey moves to *Travel planned*.
-5. **Access map** (http://127.0.0.1:8001/map/?provider_id=prov-alt-best): show the route
+   The embedded map above the cards shows each route. Clicking a card highlights that route on the
+   map, and clicking a route on the map selects its card.
+5. **Access map** (sidebar → *Access map*, inside the app): show the route
    lines, the snow zone and the construction marker. Click a route to see its factor breakdown. Switch
    *Travel conditions* to **Clear**: the recommendation flips back to the fastest route, which shows the
    scoring reacting to conditions and not just picking the shortest route. Click **Dr. Renee Whitfield** to show the
@@ -86,7 +88,7 @@ Always say "recommended based on current access and route conditions", never "sa
 |---|---|
 | Backend won't start | Keep going. Frontend and map switch to synthetic data automatically, with the same story. |
 | Map service down | Frontend shows sample routes. Restart it with `cd map && HERA_DEMO_MODE=1 python3 -m hera_map.server`. |
-| Frontend won't start | Present from the map page (steps 5–6), and show API responses at `:8000/docs`. |
+| Frontend won't start | Present from the standalone map page http://127.0.0.1:8001/map/?provider_id=prov-alt-best (steps 5–6), and show API responses at `:8000/docs`. |
 | No Wi-Fi | `HERA_DEMO_MODE=1 ./scripts/start_demo.sh`. The map loses street tiles but keeps everything else. |
 | Browser state weird | Refresh. Frontend demo state resets. To reset backend journeys, restart the backend. |
 | Everything is down | Use the screenshots and recording in the team drive (capture them during the final rehearsal). |

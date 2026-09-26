@@ -210,3 +210,7 @@
 .why ul.tradeoffs li::marker { color: var(--review); }
 .journey-stall.is-warning { background: var(--review-soft); }
 .journey-stall.is-warning > svg { color: var(--review); }
+
+/* Embedded access map (components/AccessMapFrame.tsx) */
+.map-frame { display: block; width: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); }
+.map-frame-compact { margin-bottom: 12px; }

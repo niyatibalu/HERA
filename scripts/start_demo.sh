@@ -46,6 +46,7 @@ wait_for() {
 }
 [ -n "$BACKEND_URL" ] && wait_for "$BACKEND_URL/health"
 wait_for "http://127.0.0.1:8001/health"
+[ -d "$ROOT/frontend/node_modules" ] && wait_for "http://localhost:5173"
 python3 "$ROOT/map/tools/preflight.py" || true
 echo
 echo "Running. Ctrl-C to stop."

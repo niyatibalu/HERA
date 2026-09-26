@@ -17,7 +17,15 @@ Base URL (local dev): `http://127.0.0.1:8001`. Standard library only, so there's
 | GET | `/routes?patient_id=&provider_id=&journey_id=&scenario=&weights=&date=` | `RouteOptionsResponse` (below) |
 | GET | `/conditions?scenario=&date=` | `ConditionsSnapshot` |
 | GET | `/analytics/access?region_type=&specialty=&region=` | Population access analytics (below) |
-| GET | `/map/?patient_id=&provider_id=&scenario=` | Interactive map page (can be linked to or embedded in an iframe) |
+| GET | `/map/?patient_id=&provider_id=&scenario=&route=&embed=1&inapp=1&theme=` | Interactive map page. The web app embeds it (see below). |
+
+### Embedding (used by `frontend/src/components/AccessMapFrame.tsx`)
+
+- `embed=1`: compact map with routes and conditions only, no side panel (care journey travel step).
+- `inapp=1`: full map with side panel, without the page title the app already shows (Access map page).
+- `theme=light|dark`: match the host app. `route=<route_id>`: route to highlight initially.
+- The host highlights a route without reloading with `postMessage({source: 'hera-app', type: 'selectRoute', route_id})`.
+- The map reports route clicks with `postMessage({source: 'hera-map', type: 'routeSelected', route_id})`. The app only accepts these from the map's origin.
 
 `/routes` parameters:
 - `patient_id` defaults to `maya-001`.
