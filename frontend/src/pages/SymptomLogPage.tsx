@@ -11,31 +11,55 @@ export function SymptomLogPage() {
   const log = useApi(() => api.getSymptomLog(DEMO_PATIENT_ID), 'symptom-log')
   const record = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
   const journeys = useApi(() => api.getJourneys(DEMO_PATIENT_ID), 'journeys')
-  if (!log.data || !record.data || !journeys.data) return <Loading label="Loading your symptom log…" />
+  if (!log.data || !record.data || !journeys.data) return <Loading label="Loading your health timeline…" />
 
   const visits = visitOptions(record.data, journeys.data)
   const groups = groupByVisit(log.data)
+  const byVisit = new Map(groups.filter((g) => g.visit).map((g) => [g.visit!, g]))
+  const general = groups.find((g) => !g.visit)
+  const extra = groups.filter((g) => g.visit && !visits.includes(g.visit)).map((g) => g.visit!)
+  const timeline = [...visits, ...extra]
 
   return (
     <>
       <PageHeader
-        eyebrow="Symptom log"
-        title="Your notes, before and after visits"
-        lede="Jot down how you're feeling before an appointment so nothing gets forgotten, and after it to track what changed. These are your own notes: HERA keeps them for you and doesn't interpret them."
+        eyebrow="Health timeline"
+        title="Your visits and notes"
+        lede="Log how you feel before a visit so nothing gets forgotten, and after it to track what changed. HERA keeps your notes; it doesn't interpret them."
         actions={<DataSourceNote source={log.source} />}
       />
       <div className="grid grid-main">
-        <div className="stack">
-          {groups.length === 0 && <div className="card empty">No notes yet. Log how you're feeling to get started.</div>}
-          {groups.map((g) => (
-            <Card key={g.visit ?? 'general'} icon={g.visit ? 'calendar' : 'record'} title={g.visit ?? 'General notes'} sub={g.visit ? `${g.before.length} before · ${g.after.length} after` : 'Not tied to a visit'}>
-              <div className="card-body stack-sm">
-                {[...g.before, ...g.after, ...g.general].map((e) => <SymptomNote key={e.entry_id} entry={e} />)}
-              </div>
-            </Card>
-          ))}
-        </div>
-        <div className="stack">
+        <ol className="timeline" aria-label="Visits and notes">
+          {timeline.map((v) => {
+            const g = byVisit.get(v)
+            const upcoming = v.endsWith('(upcoming)')
+            return (
+              <li key={v} className={`timeline-item ${upcoming ? 'is-upcoming' : ''} ${g ? '' : 'is-quiet'}`}>
+                <span className="timeline-dot" aria-hidden="true" />
+                <section className="timeline-body" aria-label={v}>
+                  <h2 className="timeline-title">{v.replace(' (upcoming)', '')}{upcoming && <span className="badge badge-accent">Upcoming</span>}</h2>
+                  {g ? (
+                    <div className="stack-sm">
+                      {[...g.before, ...g.after].map((e) => <SymptomNote key={e.entry_id} entry={e} />)}
+                    </div>
+                  ) : (
+                    <p className="timeline-empty">No notes for this visit</p>
+                  )}
+                </section>
+              </li>
+            )
+          })}
+          {general && (
+            <li className="timeline-item">
+              <span className="timeline-dot" aria-hidden="true" />
+              <section className="timeline-body" aria-label="General notes">
+                <h2 className="timeline-title">General notes</h2>
+                <div className="stack-sm">{general.general.map((e) => <SymptomNote key={e.entry_id} entry={e} />)}</div>
+              </section>
+            </li>
+          )}
+        </ol>
+        <div className="sticky-side">
           <NewSymptomForm visits={visits} />
         </div>
       </div>

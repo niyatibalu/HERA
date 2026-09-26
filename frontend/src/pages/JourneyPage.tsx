@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CareTabs } from '../components/Layout'
 import { Link, useLocation } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
@@ -32,6 +33,7 @@ export function JourneyPage() {
 
   return (
     <>
+      <CareTabs />
       <PageHeader
         eyebrow="Care journey"
         title="Every referral, tracked to the finish"

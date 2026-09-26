@@ -87,8 +87,21 @@ export interface AttentionItem {
   tone: 'stalled' | 'review'
   title: string
   detail: string
+  /** Short versions for the home priority card. */
+  headline: string
+  summary: string
   journey_id: string
   action: { label: string; to: string }
+}
+
+const BEFORE_BOOKING = new Set(['need_identified', 'provider_matched', 'records_ready', 'appointment_scheduled'])
+
+function shortStatus(j: CareJourney, state: string, label: string, days: number, tone: 'stalled' | 'review') {
+  const what = /specialist/i.test(j.need) ? 'Specialist referral' : humanize(j.need)
+  return {
+    headline: `${what} ${tone === 'stalled' ? 'stalled' : 'at risk of stalling'}`,
+    summary: BEFORE_BOOKING.has(state) ? `No appointment booked after ${days} ${days === 1 ? 'day' : 'days'}` : `${label} for ${days} days`,
+  }
 }
 
 /** Care items needing the patient's attention: stalled pathways first, then travel planning. */
@@ -101,6 +114,7 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
       out.push({
         id: j.journey_id,
         tone: 'stalled',
+        ...shortStatus(j, step.state, step.label, daysInState(j, today), 'stalled'),
         title: `${/specialist/i.test(j.need) && step.state === 'appointment_scheduled' ? 'Specialist appointment not scheduled' : STALL_TITLE[step.state] ?? `${step.label} stalled`} after ${daysInState(j, today)} days`,
         detail: j.stalled_reason ?? `${j.need} has not moved forward.`,
         journey_id: j.journey_id,
@@ -110,6 +124,7 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
       out.push({
         id: j.journey_id,
         tone: 'review',
+        ...shortStatus(j, step.state, step.label, daysInState(j, today), 'review'),
         title: `${humanize(j.need)} is at risk of stalling`,
         detail: j.stall_warning,
         journey_id: j.journey_id,
@@ -119,6 +134,8 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
       out.push({
         id: j.journey_id,
         tone: 'review',
+        headline: 'Plan your trip to care',
+        summary: 'Winter weather is possible on your route',
         title: `Plan travel for your ${humanize(j.need).toLowerCase()}`,
         detail: 'Winter weather is possible. Compare lower-risk routes and alternatives.',
         journey_id: j.journey_id,

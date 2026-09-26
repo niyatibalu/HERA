@@ -53,26 +53,26 @@ For a guaranteed-offline run: `HERA_DEMO_MODE=1 ./scripts/start_demo.sh`.
 
 ## Exact demo sequence (~4 min)
 
-1. **Overview** (`/`): Maya, 29. The referral is at risk of stalling. MyChart isn't connected yet.
-2. **Health record → Connect MyChart**: show what HERA asks to read (read-only), then **Allow and connect**.
+1. **Home** (`/`): "Good morning, Maya" with one priority: *Specialist referral stalled, no appointment booked after 9 days*. Below it: her care journey, latest note, upcoming care and symptoms.
+2. **Records → Connect MyChart**: show what HERA asks to read (read-only), then **Allow and connect**.
    20 records import from 3 health systems. Say it clearly: the connection is simulated and the data synthetic.
-3. **Symptom log** (`/symptoms`): Maya's own notes grouped by visit, before and after. Log a new
+3. **Health timeline** (`/timeline`): her visits in order, with her own notes before and after each. Log a new
    "before visit" note for the upcoming specialist visit. HERA stores the notes and doesn't interpret them.
    (Trends aren't in HERA: patients already get them in MyChart.)
-4. **Care access** (`/access`): **Your care preferences** covers budget and financial assistance,
+4. **Care → Find care** (`/access`): **Your care preferences** covers budget and financial assistance,
    insurance, travel limit, expertise and minimum rating, availability, telehealth and clinician gender.
    The original referral (Dr. Whitfield, Chicago) is out of network, has a 61-day wait and is 122 mi away.
    Click **Find better options**. Dr. Okafor ranks first, with reasons tied to Maya's preferences
    ("Within your budget", "Has appointments when you're free", "Matches your preference for a female
    clinician"). Optional: **Edit preferences**, switch the clinician to *Male*, then **Save and re-rank**
    to show the ranking change, and switch it back. Choose **Dr. Okafor**.
-5. **Care journey** (`/journey`): steps advance through matched → records shared → scheduled.
+5. **Care → Journey** (`/journey`): steps advance through matched → records shared → scheduled.
    Under **Plan how to get there**, the embedded map scores routes for the Dec 29 appointment during a winter storm:
    - *Fastest route*: 18 min via Regent St, high weather risk, construction, unplowed side streets
    - *HERA recommended*: 28 min via Park St & the Beltline, "uses major roads, avoids reported
      construction, and has lower winter-weather exposure"
    Click cards to highlight routes on the map, then **Use HERA recommended**. The journey moves to *Travel planned*.
-6. **Access map** (sidebar): switch *Travel conditions* to **Clear** and the recommendation flips to the fastest
+6. **Care → Map**: switch *Travel conditions* to **Clear** and the recommendation flips to the fastest
    route. Tick **Show regional care gaps**: rural SW Wisconsin is a care gap (synthetic cohort).
 7. **Research** (`/research`): no study matches before consent. Consent, then one *potentially eligible*
    match appears under a pseudonymous `candidate_id`.

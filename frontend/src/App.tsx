@@ -24,8 +24,9 @@ export default function App() {
       <Route element={<Layout patient={record.data?.patient} mychart={mychart.data} attentionCount={stalledCount} />}>
         <Route index element={<HomePage />} />
         <Route path="record" element={<RecordPage />} />
-        <Route path="symptoms" element={<SymptomLogPage />} />
-        <Route path="timeline" element={<Navigate to="/symptoms" replace />} />
+        <Route path="timeline" element={<SymptomLogPage />} />
+        <Route path="symptoms" element={<Navigate to="/timeline" replace />} />
+        <Route path="care" element={<Navigate to="/access" replace />} />
         <Route path="access" element={<AccessPage />} />
         <Route path="journey" element={<JourneyPage />} />
         <Route path="map" element={<MapPage />} />

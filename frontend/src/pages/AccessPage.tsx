@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CareTabs } from '../components/Layout'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
@@ -28,6 +29,7 @@ export function AccessPage() {
   if (!journey) {
     return (
       <>
+        <CareTabs />
         <PageHeader eyebrow="Care access" title="No open care needs" lede="Every care pathway is complete." />
         <Link className="btn btn-primary" to="/journey">View care journey</Link>
       </>
@@ -58,6 +60,7 @@ export function AccessPage() {
 
   return (
     <>
+      <CareTabs />
       <PageHeader
         eyebrow="Care access"
         title="Find care you can actually reach"
@@ -107,8 +110,8 @@ export function AccessPage() {
 
       {showAlternatives && (
         <section className="section-gap" aria-labelledby="alts-h">
-          <div style={{ marginBottom: 12 }}>
-            <h2 id="alts-h" className="card-title" style={{ fontSize: 18 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h2 id="alts-h" className="section-title">
               {o.alternatives.length === 0
                 ? 'No better options found yet'
                 : `HERA found ${o.alternatives.length} better ${o.alternatives.length === 1 ? 'option' : 'options'}`}

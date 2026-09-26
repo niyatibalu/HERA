@@ -19,7 +19,7 @@ describe('Access map in the app', () => {
     renderApp('/map')
     expect(await screen.findByRole('heading', { name: /reaching care, not just finding it/i })).toBeInTheDocument()
     expect(screen.getByText(/access map service not connected/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /access map/i })).toHaveAttribute('href', '/map')
+    expect(screen.getByRole('link', { name: /^map$/i })).toHaveAttribute('href', '/map')
   })
 
   it('embeds the compact map for the chosen provider', async () => {
