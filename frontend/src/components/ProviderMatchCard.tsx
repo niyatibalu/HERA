@@ -1,11 +1,8 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { ProviderMatch } from '../types'
 import { Icon } from './Icon'
 import { formatCurrency, humanize, specialtyLabel } from '../lib/format'
 import { prettyReason } from '../lib/providers'
-import { SLOT_LABEL } from '../lib/preferences'
-
-const LANG: Record<string, string> = { en: 'English', es: 'Spanish' }
 
 /** One provider option with the facts that decide whether care is reachable, and why it ranks where it does. */
 export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alternative', compareTo, action }: {
@@ -34,7 +31,7 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
           </div>
         </div>
         {!isOriginal && (
-          <div className="match-score" aria-label={`Match score ${Math.round(match.score)} out of 100`}>
+          <div className="match-score" style={{ '--score': Math.round(match.score) } as CSSProperties} aria-label={`Match score ${Math.round(match.score)} out of 100`}>
             <span className="num">{Math.round(match.score)}</span>
             <small>match</small>
           </div>
@@ -51,11 +48,8 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
       </dl>
 
       <div className="row provider-tags">
-        {p.expertise_tags.map((t) => <span key={t} className="badge">{humanize(t)}</span>)}
-        {p.accessibility_features.map((t) => <span key={t} className="badge badge-info">{humanize(t)}</span>)}
-        {p.languages.length > 1 && <span className="badge badge-info">{p.languages.map((l) => LANG[l] ?? l).join(' · ')}</span>}
-        {p.gender && <span className="badge">{humanize(p.gender)} clinician</span>}
-        {p.availability?.map((s) => <span key={s} className="badge">{SLOT_LABEL[s]}</span>)}
+        {p.expertise_tags.slice(0, 2).map((t) => <span key={t} className="badge">{humanize(t)}</span>)}
+        {p.accessibility_features.includes('wheelchair_accessible') && <span className="badge badge-info">Wheelchair accessible</span>}
         {p.sliding_scale && <span className="badge badge-good">Sliding-scale fees</span>}
       </div>
       {p.review_highlights?.[0] && <p className="review-quote">“{p.review_highlights[0]}” <span className="list-meta">· synthetic patient review</span></p>}
@@ -63,12 +57,16 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
       {!isOriginal && (match.match_reasons.length > 0 || match.access_tradeoffs.length > 0) && (
         <div className="why">
           <div className="why-h">Why HERA ranked this option</div>
-          <ul>{match.match_reasons.map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
+          <ul>{match.match_reasons.slice(0, 3).map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
           {match.access_tradeoffs.length > 0 && (
-            <>
-              <div className="why-h" style={{ marginTop: 10 }}>Tradeoffs</div>
-              <ul className="tradeoffs">{match.access_tradeoffs.map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
-            </>
+            <ul className="tradeoffs">{match.access_tradeoffs.slice(0, 2).map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
+          )}
+          {(match.match_reasons.length > 3 || match.access_tradeoffs.length > 2) && (
+            <details className="more">
+              <summary>Show all {match.match_reasons.length + match.access_tradeoffs.length} reasons</summary>
+              <ul>{match.match_reasons.slice(3).map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>
+              {match.access_tradeoffs.length > 2 && <ul className="tradeoffs">{match.access_tradeoffs.slice(2).map((r) => <li key={r}>{prettyReason(r)}</li>)}</ul>}
+            </details>
           )}
         </div>
       )}

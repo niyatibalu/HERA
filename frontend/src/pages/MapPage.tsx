@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { CareTabs } from '../components/Layout'
 import { api, DEMO_PATIENT_ID, MAP_URL } from '../api/client'
 import { useApi } from '../api/useApi'
 import { AccessMapFrame } from '../components/AccessMapFrame'
@@ -18,6 +19,7 @@ export function MapPage() {
 
   return (
     <>
+      <CareTabs />
       <PageHeader
         eyebrow="Access map"
         title="Reaching care, not just finding it"

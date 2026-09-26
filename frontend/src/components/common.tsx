@@ -57,7 +57,7 @@ const ALERT_ICON: Record<AlertTone, IconName> = { stalled: 'pause', review: 'fla
 export function Alert({ tone, title, children, action }: { tone: AlertTone; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className={`alert alert-${tone}`} role={tone === 'stalled' ? 'alert' : tone === 'good' ? 'status' : undefined}>
-      <Icon name={ALERT_ICON[tone]} className="alert-icon" />
+      <span className="alert-icon" aria-hidden="true"><Icon name={ALERT_ICON[tone]} size={14} /></span>
       <div>
         <div className="alert-title">{title}</div>
         {children && <div className="alert-text">{children}</div>}

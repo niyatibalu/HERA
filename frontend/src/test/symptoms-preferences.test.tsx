@@ -5,24 +5,27 @@ import { renderApp } from './renderApp'
 
 describe('Symptom log', () => {
   it('groups notes by visit, before and after', async () => {
-    renderApp('/symptoms')
-    expect(await screen.findByRole('heading', { name: /your notes, before and after visits/i })).toBeInTheDocument()
-    const aug = screen.getByRole('heading', { name: 'OB/GYN · Dr. Sarah Lindqvist · Aug 15' }).closest('section')!
-    expect(within(aug).getByText('1 before · 1 after')).toBeInTheDocument()
-    expect(within(aug).getAllByRole('article')).toHaveLength(2)
-    expect(screen.getByRole('heading', { name: /general notes/i })).toBeInTheDocument()
+    renderApp('/timeline')
+    expect(await screen.findByRole('heading', { name: /your visits and notes/i })).toBeInTheDocument()
+    const aug = screen.getByRole('region', { name: 'OB/GYN · Dr. Sarah Lindqvist · Aug 15' })
+    expect(within(aug).getAllByRole('article').map((a) => a.getAttribute('aria-label'))).toEqual([
+      'Pelvic pain, 7 out of 10, before visit',
+      'Pelvic pain, 7 out of 10, after visit',
+    ])
+    expect(within(screen.getByRole('region', { name: 'OB/GYN · Dr. Sarah Lindqvist · Dec 8' })).getByText(/no notes for this visit/i)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /general notes/i })).toBeInTheDocument()
   })
 
   it('logs a note before an upcoming visit and can delete it', async () => {
     const user = userEvent.setup()
-    renderApp('/symptoms')
+    renderApp('/timeline')
     const form = await screen.findByRole('form', { name: /log a symptom/i })
     await user.type(within(form).getByLabelText(/^symptom/i), 'Bloating')
     await user.type(within(form).getByLabelText(/^note/i), 'Worse after meals')
     expect(within(form).getByLabelText(/which visit/i)).toHaveValue('Chronic pelvic pain specialist evaluation (upcoming)')
     await user.click(within(form).getByRole('button', { name: /save note/i }))
 
-    const group = (await screen.findByRole('heading', { name: 'Chronic pelvic pain specialist evaluation (upcoming)' })).closest('section')!
+    const group = await screen.findByRole('region', { name: 'Chronic pelvic pain specialist evaluation (upcoming)' })
     const note = await within(group).findByRole('article', { name: /bloating, 5 out of 10, before visit/i })
     expect(within(note).getByText('Worse after meals')).toBeInTheDocument()
     await user.click(within(note).getByRole('button', { name: /delete note about bloating/i }))
@@ -31,7 +34,7 @@ describe('Symptom log', () => {
 
   it('requires a symptom', async () => {
     const user = userEvent.setup()
-    renderApp('/symptoms')
+    renderApp('/timeline')
     const form = await screen.findByRole('form', { name: /log a symptom/i })
     await user.click(within(form).getByRole('button', { name: /save note/i }))
     expect(within(form).getByRole('alert')).toHaveTextContent(/add a symptom/i)

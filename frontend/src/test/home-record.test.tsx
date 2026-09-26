@@ -4,23 +4,27 @@ import { describe, expect, it } from 'vitest'
 import { renderApp } from './renderApp'
 
 describe('Patient home', () => {
-  it('summarizes the whole care journey', async () => {
+  it('leads with one priority, then the journey, insights, upcoming care and symptoms', async () => {
     renderApp('/')
-    expect(await screen.findByRole('heading', { name: /welcome back, maya/i })).toBeInTheDocument()
-    expect(screen.getByText(/specialist appointment not scheduled after 9 days/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /find better options/i })).toHaveAttribute('href', '/access?journey=jr-specialist&show=options')
-    for (const h of [/active care/i, /upcoming/i, /active referrals/i, /recent health changes/i, /symptom notes/i]) {
+    expect(await screen.findByRole('heading', { name: /good (morning|afternoon|evening), maya/i, level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(/1 thing needs your attention/i)).toBeInTheDocument()
+    const priority = screen.getByRole('heading', { name: /specialist referral stalled/i }).closest('section')!
+    expect(within(priority).getByText(/no appointment booked after 9 days/i)).toBeInTheDocument()
+    expect(within(priority).getByRole('link', { name: /find better options/i })).toHaveAttribute('href', '/access?journey=jr-specialist&show=options')
+    for (const h of [/chronic pelvic pain care journey/i, /upcoming care/i, /^symptoms$/i]) {
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
     }
-    expect(screen.queryByRole('heading', { name: /health trend/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/3 of 7 steps complete/i)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /health trend|noticed a pattern/i })).not.toBeInTheDocument()
   })
 
-  it('prompts to connect MyChart and shows the latest symptom notes', async () => {
+  it('prompts to connect MyChart and summarizes symptoms', async () => {
     renderApp('/')
-    expect(await screen.findByRole('heading', { name: /connect your mychart/i })).toBeInTheDocument()
-    const notes = screen.getByRole('heading', { name: /symptom notes/i }).closest('section')!
-    expect(within(notes).getByText(/fatigue/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /connect mychart/i })).toHaveAttribute('href', '/record')
+    const connect = (await screen.findByRole('heading', { name: /bring your records together/i })).closest('article')!
+    expect(within(connect).getByRole('link', { name: /connect mychart/i })).toHaveAttribute('href', '/record')
+    const symptoms = screen.getByRole('heading', { name: /^symptoms$/i }).closest('section')!
+    for (const name of ['Fatigue', 'Pelvic pain', 'Heavy bleeding']) expect(within(symptoms).getByText(name)).toBeInTheDocument()
+    expect(within(symptoms).getAllByRole('listitem')).toHaveLength(3)
   })
 })
 
