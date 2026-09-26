@@ -120,6 +120,14 @@ class Provider:
     accessibility_features: list[str] = field(default_factory=list)
     languages: list[str] = field(default_factory=list)
     expertise_tags: list[str] = field(default_factory=list)
+    # Patient-preference fields (all synthetic). `availability` uses the
+    # AVAILABILITY_SLOTS vocabulary in app/models/preferences.py.
+    gender: Optional[str] = None  # female | male | nonbinary
+    rating: Optional[float] = None  # 0-5, synthetic patient reviews
+    review_count: int = 0
+    review_highlights: list[str] = field(default_factory=list)
+    availability: list[str] = field(default_factory=list)
+    sliding_scale: bool = False  # offers income-based pricing / financial assistance
 
 
 @dataclass

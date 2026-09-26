@@ -2,21 +2,24 @@
 // When VITE_HERA_API_URL is set, requests go to the backend. Otherwise, or when a request fails,
 // the client falls back to synthetic demo data so the patient journey always works on stage.
 import type {
+  CarePreferences,
   CareJourney,
   CareState,
   HealthEvent,
   Patient,
   PatientRecord,
   ProviderMatch,
+  MyChartConnection,
+  NewSymptomLogEntry,
   ResearchConsent,
+  SymptomLogEntry,
   RouteOptionsResponse,
   StudyMatch,
-  TrendFlag,
 } from '../types'
 import { DEMO_TODAY, mockRecord } from '../mocks/record'
-import { mockFlags } from '../mocks/timeline'
 import { mockJourneys, mockProviderMatches, mockRouteOptions } from '../mocks/care'
 import { mockStudyMatches } from '../mocks/research'
+import { mockMyChartConnected, mockMyChartNotConnected, mockPreferences, mockSymptomLog } from '../mocks/patient'
 import { addDays } from '../lib/format'
 import { REMATCH_NOTE_PREFIX, requiredSpecialty } from '../lib/providers'
 
@@ -69,11 +72,19 @@ const clone = <T>(x: T): T => structuredClone(x)
 const freshConsent = (): ResearchConsent => ({ patient_id: DEMO_PATIENT_ID, consent: false, scope: 'de_identified_cohort_matching', revoked: false })
 let demoJourneys = clone(mockJourneys)
 let demoConsent = freshConsent()
+let demoPreferences = clone(mockPreferences)
+let demoSymptoms = clone(mockSymptomLog)
+let demoMyChart = clone(mockMyChartNotConnected)
+let demoSymptomSeq = mockSymptomLog.length
 
 /** Test helper: reset in-memory demo state. */
 export function resetDemoState() {
   demoJourneys = clone(mockJourneys)
   demoConsent = freshConsent()
+  demoPreferences = clone(mockPreferences)
+  demoSymptoms = clone(mockSymptomLog)
+  demoMyChart = clone(mockMyChartNotConnected)
+  demoSymptomSeq = mockSymptomLog.length
 }
 
 function demoJourney(journeyId: string) {
@@ -127,9 +138,6 @@ export const api = {
       () => mockRecord,
     ),
 
-  getFlags: (patientId: string) =>
-    withFallback<TrendFlag[]>(API_BASE, (base) => http(base, `/patients/${patientId}/trend-flags?as_of=${DEMO_TODAY}`), () => mockFlags),
-
   getJourneys: (patientId: string) =>
     withFallback<CareJourney[]>(API_BASE, (base) => http(base, `/patients/${patientId}/care-journeys`), () => clone(demoJourneys)),
 
@@ -178,6 +186,85 @@ export const api = {
     const q = new URLSearchParams({ patient_id: patientId, journey_id: journeyId })
     if (providerId) q.set('provider_id', providerId)
     return withFallback<RouteOptionsResponse>(MAP_BASE, (base) => http(base, `/routes?${q}`), () => mockRouteOptions)
+  },
+
+  // ---------- care preferences ----------
+
+  getPreferences: (patientId: string) =>
+    withFallback<CarePreferences>(API_BASE, (base) => http(base, `/patients/${patientId}/preferences`), () => clone(demoPreferences)),
+
+  /** Saves preferences; provider matches re-rank on the next load. */
+  async savePreferences(patientId: string, prefs: CarePreferences) {
+    const { patient_id: _id, updated_at: _at, ...body } = prefs
+    const r = await withFallback<CarePreferences>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/preferences`, { method: 'PUT', body: JSON.stringify(body) }),
+      () => (demoPreferences = { ...clone(prefs), patient_id: patientId, updated_at: DEMO_TODAY }),
+    )
+    notify()
+    return r
+  },
+
+  // ---------- symptom log ----------
+
+  getSymptomLog: (patientId: string) =>
+    withFallback<SymptomLogEntry[]>(API_BASE, (base) => http(base, `/patients/${patientId}/symptom-log`), () => clone(demoSymptoms)),
+
+  async addSymptom(patientId: string, entry: NewSymptomLogEntry) {
+    const body = { ...entry, visit: entry.timing === 'general' ? null : entry.visit || null }
+    const r = await withFallback<SymptomLogEntry>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/symptom-log`, post(body)),
+      () => {
+        const e: SymptomLogEntry = { ...body, symptom: body.symptom.trim(), entry_id: `sym-${String(++demoSymptomSeq).padStart(4, '0')}`, patient_id: patientId, logged_on: DEMO_TODAY, tags: [] }
+        demoSymptoms = [e, ...demoSymptoms]
+        return clone(e)
+      },
+    )
+    notify()
+    return r
+  },
+
+  async deleteSymptom(patientId: string, entryId: string) {
+    const r = await withFallback<null>(
+      API_BASE,
+      async (base) => {
+        const res = await fetch(`${base}/patients/${patientId}/symptom-log/${entryId}`, { method: 'DELETE' })
+        if (!res.ok) throw new Error(`DELETE symptom-log → ${res.status}`)
+        return null
+      },
+      () => {
+        demoSymptoms = demoSymptoms.filter((e) => e.entry_id !== entryId)
+        return null
+      },
+    )
+    notify()
+    return r
+  },
+
+  // ---------- MyChart (simulated) ----------
+
+  getMyChart: (patientId: string) =>
+    withFallback<MyChartConnection>(API_BASE, (base) => http(base, `/patients/${patientId}/mychart`), () => clone(demoMyChart)),
+
+  async connectMyChart(patientId: string) {
+    const r = await withFallback<MyChartConnection>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/mychart/connect`, post({})),
+      () => (demoMyChart = mockMyChartConnected(DEMO_TODAY)),
+    )
+    notify()
+    return r
+  },
+
+  async disconnectMyChart(patientId: string) {
+    const r = await withFallback<MyChartConnection>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/mychart/disconnect`, post({})),
+      () => (demoMyChart = clone(mockMyChartNotConnected)),
+    )
+    notify()
+    return r
   },
 
   getConsent: (patientId: string) =>

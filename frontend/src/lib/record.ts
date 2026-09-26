@@ -1,5 +1,5 @@
 // Turns the backend's flat HealthEvent list into the sections of a unified record.
-import type { EventType, HealthEvent, PatientRecord, Provider, TrendFlag } from '../types'
+import type { EventType, HealthEvent, PatientRecord, Provider } from '../types'
 import { humanize } from './format'
 
 export type EventsByType = Record<EventType, HealthEvent[]>
@@ -53,51 +53,3 @@ export function careTeam(record: PatientRecord) {
   for (const e of record.events) if (e.event_type === 'encounter' && e.provider_id) counts.set(e.provider_id, (counts.get(e.provider_id) ?? 0) + 1)
   return [...counts.entries()].map(([id, visits]) => ({ provider: find(id), provider_id: id, visits })).filter((x) => x.provider)
 }
-
-// ---------- trend flag presentation ----------
-
-const PATTERN_LABEL: Record<TrendFlag['pattern_type'], string> = {
-  persistent_symptom: 'Persistent symptom',
-  lab_trend: 'Lab trend',
-  repeated_treatment_no_improvement: 'Treatment response',
-  multiple_specialist_visits: 'Multiple specialties',
-  unresolved_referral: 'Unresolved referral',
-  care_gap: 'Care gap',
-}
-export const patternLabel = (p: TrendFlag['pattern_type']) => PATTERN_LABEL[p]
-
-export function flagTitle(f: TrendFlag) {
-  const topic = humanize(f.topic)
-  switch (f.pattern_type) {
-    case 'persistent_symptom':
-      return `${topic} ${f.trend === 'worsening' ? 'increasing' : 'persisting'} across encounters`
-    case 'lab_trend':
-      return `${topic}: lab values ${f.trend === 'unknown' ? 'changing' : f.trend}`
-    case 'repeated_treatment_no_improvement':
-      return 'Repeated treatment without improvement'
-    case 'multiple_specialist_visits':
-      return `${topic} seen across multiple specialties`
-    case 'unresolved_referral':
-      return 'Specialist referral not yet scheduled'
-    case 'care_gap':
-      return `Care gap: ${topic.toLowerCase()}`
-  }
-}
-
-/** Numeric series behind a flag: symptom severity for symptom patterns, lab values for lab trends. */
-export function flagSeries(f: TrendFlag, events: HealthEvent[]) {
-  const topicEvents = events.filter((e) => e.topic === f.topic).sort((a, b) => a.event_date.localeCompare(b.event_date))
-  if (f.pattern_type === 'lab_trend') {
-    const labs = topicEvents.filter((e) => e.event_type === 'lab' && e.value != null)
-    if (labs.length < 2) return undefined
-    return { label: labs[0].description.split(' ')[0], unit: labs[0].unit ?? '', max: undefined as number | undefined, points: labs.map((e) => ({ date: e.event_date, value: e.value!, event_id: e.event_id })) }
-  }
-  if (f.pattern_type === 'persistent_symptom') {
-    const sx = topicEvents.filter((e) => e.event_type === 'symptom' && e.severity != null)
-    if (sx.length < 2) return undefined
-    return { label: 'Reported severity', unit: '/5', max: 5, points: sx.map((e) => ({ date: e.event_date, value: e.severity!, event_id: e.event_id })) }
-  }
-  return undefined
-}
-
-export type FlagSeries = NonNullable<ReturnType<typeof flagSeries>>

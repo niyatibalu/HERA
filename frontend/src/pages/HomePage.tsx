@@ -3,19 +3,21 @@ import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { Alert, Card, CardLink, DataSourceNote, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
-import { TrendFlag } from '../components/TrendFlag'
+import { MyChartCard } from '../components/MyChartCard'
 import { attentionItems, isComplete, journeySteps } from '../lib/journey'
 import { careTeam, groupEvents, providerLookup } from '../lib/record'
 import { journeyAppointmentDate, journeyProviderId } from '../lib/providers'
 import { daysBetween, formatDate, formatMonth, humanize, specialtyLabel } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
+import { TIMING_LABEL } from '../lib/symptoms'
 
 export function HomePage() {
   const record = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
-  const flags = useApi(() => api.getFlags(DEMO_PATIENT_ID), 'flags')
   const journeys = useApi(() => api.getJourneys(DEMO_PATIENT_ID), 'journeys')
+  const mychart = useApi(() => api.getMyChart(DEMO_PATIENT_ID), 'mychart')
+  const symptoms = useApi(() => api.getSymptomLog(DEMO_PATIENT_ID), 'symptom-log')
 
-  if (!record.data || !flags.data || !journeys.data) return <Loading label="Loading your care overview…" />
+  if (!record.data || !journeys.data || !mychart.data || !symptoms.data) return <Loading label="Loading your care overview…" />
 
   const r = record.data
   const provider = providerLookup(r.providers)
@@ -30,8 +32,8 @@ export function HomePage() {
     .sort((a, b) => a.date.localeCompare(b.date))
   const openReferrals = g.referral.filter((x) => x.status !== 'completed')
   const recent = r.events.filter((e) => e.event_type !== 'diagnosis').sort((a, b) => b.event_date.localeCompare(a.event_date)).slice(0, 5)
-  const flagged = new Set(flags.data.flatMap((f) => f.evidence.map((e) => e.event_id)))
-  const topFlag = flags.data[0]
+  const connected = mychart.data.status === 'connected'
+  const latestNotes = symptoms.data.slice(0, 3)
   const firstVisit = g.encounter[g.encounter.length - 1]
   const team = careTeam(r)
 
@@ -41,13 +43,23 @@ export function HomePage() {
         eyebrow="HERA overview"
         title={`Welcome back, ${firstName}`}
         lede={
-          <>
-            HERA has connected <strong>{g.encounter.length} visits</strong> with <strong>{team.length} clinicians</strong>
-            {firstVisit && <> since {formatDate(firstVisit.event_date, { year: true })}</>} into one health story, so nothing gets lost between appointments.
-          </>
+          connected ? (
+            <>
+              HERA has connected <strong>{g.encounter.length} visits</strong> with <strong>{team.length} clinicians</strong>
+              {firstVisit && <> since {formatDate(firstVisit.event_date, { year: true })}</>} into one health story, so nothing gets lost between appointments.
+            </>
+          ) : (
+            'Connect MyChart to bring your visits, labs and referrals from every health system into one place.'
+          )
         }
         actions={<DataSourceNote source={record.source} />}
       />
+
+      {!connected && (
+        <div style={{ marginBottom: 24 }}>
+          <MyChartCard connection={mychart.data} />
+        </div>
+      )}
 
       {attention.length > 0 && (
         <section aria-labelledby="attention-h" className="stack-sm" style={{ marginBottom: 24 }}>
@@ -96,27 +108,25 @@ export function HomePage() {
             )}
           </Card>
 
-          <Card icon="clock" title="Recent health changes" sub="From all connected records" action={<CardLink to="/timeline">Full timeline</CardLink>}>
-            <ul className="list">
-              {recent.map((e) => {
-                const m = formatMonth(e.event_date)
-                return (
-                  <li key={e.event_id}>
-                    <span className="date-chip num"><span>{m.month}</span>{m.day}</span>
-                    <div className="list-main">
-                      <div className="list-title">{e.description}</div>
-                      <div className="list-meta">{specialtyLabel(e.specialty)}{provider(e.provider_id) ? ` · ${provider(e.provider_id)!.name}` : ''}</div>
-                    </div>
-                    {flagged.has(e.event_id) && (
-                      <span className="flag-dot" title="Part of a pattern flagged for clinician review">
-                        <Icon name="flag" size={14} />
-                        <span className="visually-hidden">Flagged for clinician review</span>
-                      </span>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+          <Card icon="clock" title="Recent health changes" sub="From all connected records" action={<CardLink to="/record">Full record</CardLink>}>
+            {!connected ? (
+              <div className="empty">Connect MyChart to see changes from your visits, labs and referrals.</div>
+            ) : (
+              <ul className="list">
+                {recent.map((e) => {
+                  const m = formatMonth(e.event_date)
+                  return (
+                    <li key={e.event_id}>
+                      <span className="date-chip num"><span>{m.month}</span>{m.day}</span>
+                      <div className="list-main">
+                        <div className="list-title">{e.description}</div>
+                        <div className="list-meta">{specialtyLabel(e.specialty)}{provider(e.provider_id) ? ` · ${provider(e.provider_id)!.name}` : ''}</div>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </Card>
         </div>
 
@@ -145,13 +155,25 @@ export function HomePage() {
             )}
           </Card>
 
-          {topFlag && (
-            <Card icon="flag" title="Health trend" sub="Pattern across your connected records" action={<CardLink to="/timeline">Details</CardLink>}>
-              <div className="card-body">
-                <TrendFlag flag={topFlag} compact />
+          <Card icon="flag" title="Symptom notes" sub="Your notes before and after visits" action={<CardLink to="/symptoms">Symptom log</CardLink>}>
+            {latestNotes.length === 0 ? (
+              <div className="empty stack-sm" style={{ alignItems: 'center' }}>
+                <span>No notes yet.</span>
+                <Link to="/symptoms" className="btn btn-primary btn-sm">Log a symptom</Link>
               </div>
-            </Card>
-          )}
+            ) : (
+              <ul className="list">
+                {latestNotes.map((n) => (
+                  <li key={n.entry_id}>
+                    <div className="list-main">
+                      <div className="list-title">{n.symptom} <span className="list-meta num">· {n.severity}/10</span></div>
+                      <div className="list-meta">{TIMING_LABEL[n.timing]}{n.visit ? ` · ${n.visit}` : ''} · {formatDate(n.logged_on)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
           <Card icon="arrow" title="Active referrals">
             {openReferrals.length === 0 ? (

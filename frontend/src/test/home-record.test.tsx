@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderApp } from './renderApp'
 
@@ -8,29 +9,39 @@ describe('Patient home', () => {
     expect(await screen.findByRole('heading', { name: /welcome back, maya/i })).toBeInTheDocument()
     expect(screen.getByText(/specialist appointment not scheduled after 9 days/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /find better options/i })).toHaveAttribute('href', '/access?journey=jr-specialist&show=options')
-    for (const h of [/active care/i, /upcoming/i, /active referrals/i, /recent health changes/i, /health trend/i]) {
+    for (const h of [/active care/i, /upcoming/i, /active referrals/i, /recent health changes/i, /symptom notes/i]) {
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
     }
+    expect(screen.queryByRole('heading', { name: /health trend/i })).not.toBeInTheDocument()
   })
 
-  it('shows longitudinal trends as flagged for review, never as a diagnosis', async () => {
+  it('prompts to connect MyChart and shows the latest symptom notes', async () => {
     renderApp('/')
-    const flag = await screen.findByRole('article', { name: /trend flag/i })
-    expect(within(flag).getByText(/flagged for clinician review/i)).toBeInTheDocument()
-    expect(within(flag).getByText(/6 encounters over 11 months/i)).toBeInTheDocument()
-    expect(screen.queryByText(/diagnosed with/i)).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /connect your mychart/i })).toBeInTheDocument()
+    const notes = screen.getByRole('heading', { name: /symptom notes/i }).closest('section')!
+    expect(within(notes).getByText(/fatigue/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /connect mychart/i })).toHaveAttribute('href', '/record')
   })
 })
 
 describe('Unified health record', () => {
-  it('shows every record section with a simulated-connection label', async () => {
+  it('asks to connect MyChart first, then shows every record section', async () => {
+    const user = userEvent.setup()
     renderApp('/record')
-    expect(await screen.findByRole('heading', { name: /^connected health records$/i, level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /connect your mychart/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^labs/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^connect mychart$/i }))
+    expect(screen.getByText(/lab results/i)).toBeInTheDocument()
+    expect(screen.getByText(/signing in is simulated/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /allow and connect/i }))
+
+    expect(await screen.findByRole('heading', { name: /mychart connected/i }, { timeout: 3000 })).toBeInTheDocument()
+    expect(screen.getByText(/20 records imported/i)).toBeInTheDocument()
     expect(screen.getByText(/simulated record connection/i)).toBeInTheDocument()
     for (const section of [/^conditions/i, /^labs/i, /^visits/i, /^medications/i, /^imaging & procedures/i, /^referrals/i, /^care team/i, /record sources/i]) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument()
     }
     expect(screen.getByText(/ferritin re-checked at 8 ng\/ml/i)).toBeInTheDocument()
-    expect(screen.getAllByText('Dr. Sarah Lindqvist').length).toBeGreaterThan(0)
   })
 })

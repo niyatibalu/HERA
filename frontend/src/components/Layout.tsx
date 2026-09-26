@@ -1,20 +1,20 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Icon, type IconName } from './Icon'
-import type { Patient } from '../types'
+import type { MyChartConnection, Patient } from '../types'
 import { ageOn } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Overview', icon: 'home', end: true },
   { to: '/record', label: 'Health record', icon: 'record' },
-  { to: '/timeline', label: 'Health timeline', icon: 'timeline' },
+  { to: '/symptoms', label: 'Symptom log', icon: 'flag' },
   { to: '/access', label: 'Care access', icon: 'access' },
   { to: '/journey', label: 'Care journey', icon: 'journey' },
   { to: '/map', label: 'Access map', icon: 'map' },
   { to: '/research', label: 'Research', icon: 'research' },
 ]
 
-export function Layout({ patient, sourceCount, attentionCount = 0 }: { patient?: Patient; sourceCount?: number; attentionCount?: number }) {
+export function Layout({ patient, mychart, attentionCount = 0 }: { patient?: Patient; mychart?: MyChartConnection; attentionCount?: number }) {
   const initials = patient?.name.split(' ').map((s) => s[0]).join('') ?? ''
   return (
     <div className="shell">
@@ -58,11 +58,15 @@ export function Layout({ patient, sourceCount, attentionCount = 0 }: { patient?:
             </div>
           )}
           <div className="topbar-right">
-            {sourceCount !== undefined && (
+            {mychart && (mychart.status === 'connected' ? (
               <span className="badge badge-accent">
-                <Icon name="link" size={13} /> {sourceCount} record sources connected
+                <Icon name="link" size={13} /> MyChart connected · {mychart.organizations.length} health systems
               </span>
-            )}
+            ) : (
+              <NavLink to="/record" className="badge badge-review">
+                <Icon name="link" size={13} /> Connect MyChart
+              </NavLink>
+            ))}
             <span className="badge">Synthetic demo data</span>
           </div>
         </header>

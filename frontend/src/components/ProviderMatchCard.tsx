@@ -3,6 +3,7 @@ import type { ProviderMatch } from '../types'
 import { Icon } from './Icon'
 import { formatCurrency, humanize, specialtyLabel } from '../lib/format'
 import { prettyReason } from '../lib/providers'
+import { SLOT_LABEL } from '../lib/preferences'
 
 const LANG: Record<string, string> = { en: 'English', es: 'Spanish' }
 
@@ -46,13 +47,18 @@ export function ProviderMatchCard({ match, insurancePlan, rank, variant = 'alter
         <Fact label="Insurance" bad={!inNetwork} value={inNetwork ? 'In network' : 'Out of network'} />
         <Fact label="Est. cost" bad={(p.estimated_cost_usd ?? 0) > 300} value={p.estimated_cost_usd != null ? formatCurrency(p.estimated_cost_usd) : '—'} />
         <Fact label="Telehealth" bad={!p.telehealth_available} value={p.telehealth_available ? 'Available' : 'Not offered'} />
+        {p.rating != null && <Fact label="Rating" value={`★ ${p.rating.toFixed(1)}`} note={p.review_count ? `${p.review_count} reviews` : undefined} />}
       </dl>
 
       <div className="row provider-tags">
         {p.expertise_tags.map((t) => <span key={t} className="badge">{humanize(t)}</span>)}
         {p.accessibility_features.map((t) => <span key={t} className="badge badge-info">{humanize(t)}</span>)}
         {p.languages.length > 1 && <span className="badge badge-info">{p.languages.map((l) => LANG[l] ?? l).join(' · ')}</span>}
+        {p.gender && <span className="badge">{humanize(p.gender)} clinician</span>}
+        {p.availability?.map((s) => <span key={s} className="badge">{SLOT_LABEL[s]}</span>)}
+        {p.sliding_scale && <span className="badge badge-good">Sliding-scale fees</span>}
       </div>
+      {p.review_highlights?.[0] && <p className="review-quote">“{p.review_highlights[0]}” <span className="list-meta">· synthetic patient review</span></p>}
 
       {!isOriginal && (match.match_reasons.length > 0 || match.access_tradeoffs.length > 0) && (
         <div className="why">

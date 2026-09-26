@@ -4,6 +4,7 @@ import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { Alert, Card, DataSourceNote, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
+import { PreferencesPanel } from '../components/PreferencesPanel'
 import { ProviderMatchCard } from '../components/ProviderMatchCard'
 import { isComplete } from '../lib/journey'
 import { buildProviderOptions, journeyAppointmentDate, journeyProviderId, prettyReason, requiredSpecialty } from '../lib/providers'
@@ -63,6 +64,8 @@ export function AccessPage() {
         lede="A referral only helps if the patient can get there. HERA weighs expertise, wait, distance, insurance, cost, telehealth and accessibility, and looks for another route when the first option doesn’t work."
         actions={<DataSourceNote source={matches.source} />}
       />
+
+      <PreferencesPanel planOnFile={plan} home={r.patient.home_location.address} />
 
       <Card
         icon="stethoscope"
