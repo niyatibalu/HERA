@@ -23,21 +23,41 @@ class CareLifecycleEngine:
     def __init__(self, as_of: Optional[date] = None):
         self.as_of = as_of or date.today()
 
-    def start_journey(self, journey_id: str, patient_id: str, need: str, started_at: date) -> CareJourney:
+    def start_journey(
+        self,
+        journey_id: str,
+        patient_id: str,
+        need: str,
+        started_at: date,
+        provider_id: Optional[str] = None,
+    ) -> CareJourney:
         journey = CareJourney(
             journey_id=journey_id,
             patient_id=patient_id,
             need=need,
             state=CareState.NEED_IDENTIFIED,
+            provider_id=provider_id,
         )
         journey.state_history.append(StateTransition(state=CareState.NEED_IDENTIFIED, entered_at=started_at))
         return journey
 
-    def advance(self, journey: CareJourney, new_state: CareState, at: date, note: Optional[str] = None) -> CareJourney:
+    def advance(
+        self,
+        journey: CareJourney,
+        new_state: CareState,
+        at: date,
+        note: Optional[str] = None,
+        provider_id: Optional[str] = None,
+        appointment_date: Optional[date] = None,
+    ) -> CareJourney:
         """Move a journey to a new state. Allows forward progress in
         STATE_ORDER, or a transition into/out of STALLED at any point --
         a pathway can stall from any state and can resume from stalled
         back into the state it stalled in.
+
+        `provider_id`/`appointment_date` are optional and only overwrite
+        the journey's stored value when explicitly passed -- a caller that
+        sends only `{state, note}` leaves both untouched.
         """
         if new_state == CareState.STALLED:
             journey.stalled = True
@@ -53,6 +73,10 @@ class CareLifecycleEngine:
                     )
         journey.state = new_state
         journey.state_history.append(StateTransition(state=new_state, entered_at=at, note=note))
+        if provider_id is not None:
+            journey.provider_id = provider_id
+        if appointment_date is not None:
+            journey.appointment_date = appointment_date
         return journey
 
     def check_stalled(self, journey: CareJourney) -> Optional[str]:

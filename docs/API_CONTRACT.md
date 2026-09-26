@@ -41,7 +41,7 @@ followup_completed`, plus `stalled` (reachable from any state).
 | GET | `/patients/{id}/providers?specialty=...&telehealth=bool&max_distance_mi=...` | `ProviderMatch[]`, ranked |
 | GET | `/patients/{id}/care-journeys` | `CareJourney[]` (includes `stall_warning`) |
 | POST | `/patients/{id}/care-journeys` `{need}` | `CareJourney` |
-| POST | `/patients/{id}/care-journeys/{journey_id}/advance` `{state, note?}` | `CareJourney`, 400 on invalid transition |
+| POST | `/patients/{id}/care-journeys/{journey_id}/advance` `{state, note?, provider_id?, appointment_date?}` | `CareJourney`, 400 on invalid transition |
 | GET | `/patients/{id}/research-consent` | `ResearchConsent` |
 | POST | `/patients/{id}/research-consent` `{consent, scope?}` | `ResearchConsent` |
 | GET | `/patients/{id}/study-matches` | `StudyMatch[]` — always `[]` unless consent is active |
@@ -50,6 +50,34 @@ followup_completed`, plus `stalled` (reachable from any state).
 Unknown `patient_id` → `404 {detail: "..."}` on every patient-scoped route.
 
 Interactive docs once the server is running: `GET /docs`.
+
+### `advance` — setting provider_id / appointment_date
+
+`provider_id` and `appointment_date` on the advance request are optional
+and only overwrite the journey's stored value when explicitly sent — a
+request with only `{state, note}` leaves both untouched, so every existing
+caller keeps working unchanged. Use them to record a provider/appointment
+in the same call as the state transition instead of encoding that
+information in `note` text:
+
+```
+POST /patients/maya-001/care-journeys/journey-0001/advance
+{
+  "state": "appointment_scheduled",
+  "note": "Re-matched by HERA to Dr. Ifeoma Okafor",
+  "provider_id": "prov-alt-best",
+  "appointment_date": "2025-12-29"
+}
+```
+
+`GET /patients/{id}/care-journeys` always reflects the current
+`provider_id`/`appointment_date` on each journey — no need to parse them
+back out of `note` strings.
+
+An unknown `provider_id` (not present in the provider directory) is
+rejected with `400 {detail: "unknown provider_id '...'"}` and the journey
+is left completely unchanged — nothing is stored, and the state transition
+itself does not happen either.
 
 ## Demo patient
 
@@ -60,6 +88,16 @@ hormonal therapy trial with no improvement through December, referred to a
 chronic pelvic pain specialist who is out-of-network / 61-day wait / 122 mi
 away. HERA's matching engine ranks an in-network, 12-day-wait, 1.7 mi
 alternative (`prov-alt-best`) above the original referral.
+
+Her care journey (`GET /patients/maya-001/care-journeys`) is seeded on
+server startup at `need_identified`, dated to her actual referral event
+(2025-12-08), with `provider_id` already set to the originally-referred,
+inaccessible specialist (`prov-original-specialist`). HERA re-matching her
+to a better provider is expected to happen via an `advance` call that
+overwrites `provider_id` — see the `advance` section above. At the default
+demo date this journey already shows a `stall_warning` (9 days in
+`need_identified`, past its 3-day threshold), which is the point: nothing
+happened after the original referral until HERA intervened.
 
 ## FAILSAFE
 
@@ -75,3 +113,13 @@ alternative (`prov-alt-best`) above the original referral.
 - DEMO MODE = the default running state of this backend. There is no
   separate "demo mode" flag to remember to flip; running `uvicorn
   app.main:app` always serves synthetic data with deterministic engines.
+- The care-journey/consent store's notion of "today" is a fixed demo date
+  (`2025-12-17` by default — same date the frontend's own `DEMO_TODAY`
+  mock uses), not the real wall clock, so stall warnings and timestamps
+  stay consistent with the synthetic patient data no matter what day the
+  demo is actually run on. Override it with `HERA_DEMO_TODAY=YYYY-MM-DD`
+  if you need to rehearse against a different date.
+- The demo store is a single in-process singleton — restarting the server
+  (or calling `store.reset()`) wipes any mutations (advanced journeys,
+  granted consent) and reseeds Maya's journey from scratch. Useful for
+  resetting between run-throughs.
