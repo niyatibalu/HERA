@@ -5,17 +5,18 @@ import type { IconName } from './Icon'
 import { Icon } from './Icon'
 import { formatSyncTime } from '../lib/format'
 
-/** A section of the unified record, attributed to the connected systems it came from. */
-export function ConnectedRecordCard({ title, icon, count, sources, children, action }: {
+/** A section of the unified record, attributed to the clinicians/systems it came from. */
+export function ConnectedRecordCard({ title, icon, count, from, children, action }: {
   title: string
   icon: IconName
   count?: number
-  sources: RecordSource[]
+  /** Names of the clinicians or systems that documented this section. */
+  from: string[]
   children: ReactNode
   action?: ReactNode
 }) {
-  const names = sources.map((s) => s.name)
-  const sub = names.length === 0 ? 'Reconciled across all connected sources' : names.length <= 2 ? `From ${names.join(' & ')}` : `From ${names.length} connected sources`
+  const names = [...new Set(from)]
+  const sub = names.length === 0 ? 'Reconciled across connected records' : names.length <= 2 ? `Documented by ${names.join(' & ')}` : `Documented by ${names.length} clinicians`
   return (
     <Card
       icon={icon}
@@ -28,7 +29,7 @@ export function ConnectedRecordCard({ title, icon, count, sources, children, act
       sub={sub}
       action={action}
     >
-      {children}
+      {count === 0 ? <div className="empty">Nothing documented yet</div> : children}
     </Card>
   )
 }
@@ -43,11 +44,13 @@ const SOURCE_LABEL: Record<RecordSource['system_type'], string> = {
 
 export function ConnectedSources({ sources }: { sources: RecordSource[] }) {
   return (
-    <Card
-      icon="link"
-      title="Connected health records"
-      sub="Authorized by the patient · simulated connection for this demo"
-    >
+    <section className="card" aria-labelledby="sources-h">
+      <header className="card-header">
+        <div>
+          <h2 className="card-title" id="sources-h"><Icon name="link" size={16} /> Record sources</h2>
+          <div className="card-sub">Authorized by the patient · simulated connection</div>
+        </div>
+      </header>
       <ul className="list">
         {sources.map((s) => (
           <li key={s.source_id}>
@@ -58,13 +61,13 @@ export function ConnectedSources({ sources }: { sources: RecordSource[] }) {
             <div className="list-main">
               <div className="list-title">{s.name}</div>
               <div className="list-meta">
-                {SOURCE_LABEL[s.system_type]} · last synced {formatSyncTime(s.last_synced_at)}
+                {SOURCE_LABEL[s.system_type]} · synced {formatSyncTime(s.last_synced_at)}
                 {s.simulated && ' · simulated'}
               </div>
             </div>
           </li>
         ))}
       </ul>
-    </Card>
+    </section>
   )
 }

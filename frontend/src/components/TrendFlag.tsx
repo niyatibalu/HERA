@@ -1,22 +1,23 @@
 import type { ReactNode } from 'react'
 import type { TrendFlag as TrendFlagData } from '../types'
 import { Icon } from './Icon'
+import { flagTitle, patternLabel } from '../lib/record'
+import { formatDate, monthsBetween } from '../lib/format'
 
-const PATTERN_LABEL: Record<TrendFlagData['pattern_type'], string> = {
-  symptom_progression: 'Symptom progression',
-  lab_decline: 'Lab trend',
-  repeated_complaint: 'Repeated complaint',
-  unresolved_referral: 'Unresolved care item',
-  treatment_without_improvement: 'Treatment response',
-}
-
-/** Review badge: HERA flags patterns for clinicians; it never presents a diagnosis. */
+/** HERA flags patterns for clinicians; it never presents a diagnosis. */
 export function ReviewBadge() {
   return (
     <span className="badge badge-review">
       <Icon name="flag" size={12} /> Flagged for clinician review
     </span>
   )
+}
+
+const TREND_LABEL: Record<TrendFlagData['trend'], string> = {
+  worsening: 'Worsening',
+  stable: 'Unchanged',
+  improving: 'Improving',
+  unknown: '',
 }
 
 export function TrendFlag({ flag, compact = false, active = false, onSelect, chart }: {
@@ -26,27 +27,28 @@ export function TrendFlag({ flag, compact = false, active = false, onSelect, cha
   onSelect?: (flagId: string) => void
   chart?: ReactNode
 }) {
-  const stats = (
-    <div className="trend-stats">
-      {flag.encounter_count > 1 && <span><strong className="num">{flag.encounter_count}</strong> {flag.pattern_type === 'lab_decline' ? 'results' : 'encounters'}</span>}
-      {flag.span_months > 0 && <span><strong className="num">{flag.span_months}</strong> months</span>}
-      <span className="muted">{PATTERN_LABEL[flag.pattern_type]}</span>
-    </div>
-  )
+  const months = monthsBetween(flag.first_seen, flag.last_seen)
+  const title = flagTitle(flag)
   return (
-    <article className={`trend-flag ${compact ? 'trend-flag-compact' : ''} ${active ? 'is-active' : ''}`} aria-label={`Trend flag: ${flag.title}`}>
+    <article className={`trend-flag ${compact ? 'trend-flag-compact' : ''} ${active ? 'is-active' : ''}`} aria-label={`Trend flag: ${title}`}>
       <div className="trend-flag-top">
         <ReviewBadge />
-        {!compact && <span className="trend-source">Detected by {flag.generated_by}</span>}
+        {!compact && <span className="trend-source">{patternLabel(flag.pattern_type)}</span>}
       </div>
-      <h3 className="trend-title">{flag.title}</h3>
-      <p className="trend-summary">{flag.summary}</p>
+      <h3 className="trend-title">{title}</h3>
+      <p className="trend-summary">{flag.message}</p>
       {chart}
-      {!compact && <p className="trend-review"><Icon name="stethoscope" size={14} /> {flag.suggested_review}</p>}
-      {stats}
-      {onSelect && flag.related_event_ids.length > 0 && (
+      <div className="trend-stats">
+        {flag.encounter_count > 1 && <span><strong className="num">{flag.encounter_count}</strong> {flag.pattern_type === 'lab_trend' ? 'results' : 'encounters'}</span>}
+        {months > 0 && <span><strong className="num">{months}</strong> {months === 1 ? 'month' : 'months'}</span>}
+        <span className="muted num">
+          {flag.first_seen === flag.last_seen ? formatDate(flag.first_seen, { year: true }) : `${formatDate(flag.first_seen)} – ${formatDate(flag.last_seen, { year: true })}`}
+        </span>
+        {TREND_LABEL[flag.trend] && <span className="muted">{TREND_LABEL[flag.trend]}</span>}
+      </div>
+      {onSelect && flag.evidence.length > 0 && (
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => onSelect(flag.flag_id)} aria-pressed={active}>
-          {active ? 'Showing related events' : `Highlight ${flag.related_event_ids.length} related events`}
+          {active ? 'Showing evidence on timeline' : `Show ${flag.evidence.length} source ${flag.evidence.length === 1 ? 'record' : 'records'} on timeline`}
         </button>
       )}
     </article>

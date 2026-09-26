@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Icon, type IconName } from './Icon'
-import { mockRecord } from '../mocks/record'
+import type { Patient } from '../types'
+import { ageOn } from '../lib/format'
+import { DEMO_TODAY } from '../mocks/record'
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Overview', icon: 'home', end: true },
@@ -11,10 +13,8 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/research', label: 'Research', icon: 'research' },
 ]
 
-export function Layout({ attentionCount = 0 }: { attentionCount?: number }) {
-  // Header identity comes from the synthetic demo patient until auth exists.
-  const p = mockRecord.patient
-  const initials = p.display_name.split(' ').map((s) => s[0]).join('')
+export function Layout({ patient, sourceCount, attentionCount = 0 }: { patient?: Patient; sourceCount?: number; attentionCount?: number }) {
+  const initials = patient?.name.split(' ').map((s) => s[0]).join('') ?? ''
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -26,7 +26,7 @@ export function Layout({ attentionCount = 0 }: { attentionCount?: number }) {
           </span>
           <span>
             <span className="brand-name">HERA</span>
-            <span className="brand-sub" style={{ display: 'block' }}>Connected women’s care</span>
+            <span className="brand-sub">Connected women’s care</span>
           </span>
         </NavLink>
         <nav className="nav" aria-label="Main">
@@ -35,7 +35,9 @@ export function Layout({ attentionCount = 0 }: { attentionCount?: number }) {
             <NavLink key={n.to} to={n.to} end={n.end}>
               <Icon name={n.icon} />
               {n.label}
-              {n.to === '/journey' && attentionCount > 0 && <span className="nav-count" aria-label={`${attentionCount} need attention`}>{attentionCount}</span>}
+              {n.to === '/journey' && attentionCount > 0 && (
+                <span className="nav-count" aria-label={`${attentionCount} stalled`}>{attentionCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -43,19 +45,23 @@ export function Layout({ attentionCount = 0 }: { attentionCount?: number }) {
       </aside>
       <div className="main">
         <header className="topbar">
-          <div className="patient-chip">
-            <span className="avatar" aria-hidden="true">{initials}</span>
-            <div>
-              <strong>{p.display_name}</strong>
-              <span>
-                {p.age} · {p.home_location.city}, {p.home_location.state} · {p.insurance_plan}
-              </span>
+          {patient && (
+            <div className="patient-chip">
+              <span className="avatar" aria-hidden="true">{initials}</span>
+              <div>
+                <strong>{patient.name}</strong>
+                <span>
+                  {ageOn(patient.date_of_birth, DEMO_TODAY)} · {patient.home_location.address} · {patient.insurance_plan}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
           <div className="topbar-right">
-            <span className="badge badge-accent">
-              <Icon name="link" size={13} /> {p.record_sources.length} record sources connected
-            </span>
+            {sourceCount !== undefined && (
+              <span className="badge badge-accent">
+                <Icon name="link" size={13} /> {sourceCount} record sources connected
+              </span>
+            )}
             <span className="badge">Synthetic demo data</span>
           </div>
         </header>

@@ -1,84 +1,73 @@
 // SYNTHETIC DATA — fictional patient for the hackathon demo. No real patient information.
-import type { HealthRecord } from '../types'
+// Mirrors backend/app/data/synthetic_patients.py and providers.py (feature/backend) so the
+// demo tells the same story whether or not the backend is running.
+import type { HealthEvent, PatientRecord, Provider } from '../types'
 
-export const DEMO_TODAY = '2026-09-26'
+/** "Today" inside the demo story: 9 days after Maya's Dec 8 specialist referral. */
+export const DEMO_TODAY = '2025-12-17'
 
-export const mockRecord: HealthRecord = {
+const PID = 'maya-001'
+
+type EventInput = Omit<HealthEvent, 'patient_id' | 'source'>
+const ev = (e: EventInput): HealthEvent => ({ patient_id: PID, source: 'mock_ehr_adapter', ...e })
+
+export const mockEvents: HealthEvent[] = [
+  ev({ event_id: 'ev-001', event_type: 'encounter', event_date: '2025-01-14', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Primary care visit for new-onset lower pelvic pain.', status: 'active' }),
+  ev({ event_id: 'ev-002', event_type: 'symptom', event_date: '2025-01-14', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Intermittent lower pelvic pain, roughly two weeks.', severity: 2, status: 'active' }),
+  ev({ event_id: 'ev-003', event_type: 'encounter', event_date: '2025-03-02', topic: 'heavy_menstrual_bleeding', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Follow-up visit; new complaint of heavy menstrual bleeding.', status: 'active' }),
+  ev({ event_id: 'ev-004', event_type: 'symptom', event_date: '2025-03-02', topic: 'heavy_menstrual_bleeding', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Soaking through pads within an hour on heaviest days.', severity: 3, status: 'active' }),
+  ev({ event_id: 'ev-005', event_type: 'symptom', event_date: '2025-03-02', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Pelvic pain persists, now described as sharper.', severity: 3, status: 'active' }),
+  ev({ event_id: 'ev-006', event_type: 'lab', event_date: '2025-05-19', topic: 'iron_deficiency', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Ferritin 22 ng/mL, low-normal.', value: 22, unit: 'ng/mL', status: 'active' }),
+  ev({ event_id: 'ev-007', event_type: 'encounter', event_date: '2025-05-19', topic: 'iron_deficiency', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Labs reviewed; iron deficiency likely related to heavy menstrual bleeding.', status: 'active' }),
+  ev({ event_id: 'ev-008', event_type: 'medication', event_date: '2025-05-19', topic: 'iron_deficiency', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Started oral ferrous sulfate supplementation.', status: 'active', raw: { treatment_category: 'iron_supplementation' } }),
+  ev({ event_id: 'ev-009', event_type: 'encounter', event_date: '2025-07-08', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Return visit: pelvic pain worsened despite supplementation.', status: 'active' }),
+  ev({ event_id: 'ev-010', event_type: 'symptom', event_date: '2025-07-08', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Pain now daily, 7/10 at worst, interfering with work.', severity: 4, status: 'active' }),
+  ev({ event_id: 'ev-011', event_type: 'referral', event_date: '2025-07-08', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-pcp-01', description: 'Referred to OB/GYN for persistent pelvic pain and heavy menstrual bleeding.', status: 'completed' }),
+  ev({ event_id: 'ev-012', event_type: 'encounter', event_date: '2025-08-15', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Initial OB/GYN evaluation for pelvic pain.', status: 'active' }),
+  ev({ event_id: 'ev-013', event_type: 'lab', event_date: '2025-08-15', topic: 'iron_deficiency', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Ferritin re-checked at 8 ng/mL, declined from prior 22 ng/mL.', value: 8, unit: 'ng/mL', status: 'active' }),
+  ev({ event_id: 'ev-014', event_type: 'encounter', event_date: '2025-09-22', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Second OB/GYN visit; pelvic ultrasound reviewed, no clear structural cause.', status: 'active' }),
+  ev({ event_id: 'ev-015', event_type: 'symptom', event_date: '2025-09-22', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Pain unchanged, now persistent for over six months.', severity: 4, status: 'active' }),
+  ev({ event_id: 'ev-016', event_type: 'medication', event_date: '2025-09-22', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Trial of combined hormonal contraceptive for symptom management.', status: 'active', raw: { treatment_category: 'hormonal_therapy' } }),
+  ev({ event_id: 'ev-017', event_type: 'encounter', event_date: '2025-12-08', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Hormonal therapy trial reviewed; symptoms persist despite adjustment.', status: 'active' }),
+  ev({ event_id: 'ev-018', event_type: 'medication', event_date: '2025-12-08', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Hormonal therapy dose adjusted; second medication trial for pelvic pain.', status: 'active', raw: { treatment_category: 'hormonal_therapy' } }),
+  ev({ event_id: 'ev-019', event_type: 'symptom', event_date: '2025-12-08', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'No improvement on adjusted hormonal therapy; pain persists.', severity: 4, status: 'active' }),
+  ev({ event_id: 'ev-020', event_type: 'referral', event_date: '2025-12-08', topic: 'pelvic_pain', specialty: 'chronic_pelvic_pain', provider_id: 'prov-obgyn-01', description: 'Referred to a chronic pelvic pain / pelvic floor specialist.', status: 'pending' }),
+
+  // Frontend-only additions (not yet in backend synthetic data) so the unified record has
+  // documented conditions and the imaging study referenced in ev-014.
+  ev({ event_id: 'ev-f01', event_type: 'diagnosis', event_date: '2025-01-14', topic: 'pelvic_pain', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Pelvic pain', status: 'ongoing', raw: { icd10: 'R10.2' } }),
+  ev({ event_id: 'ev-f02', event_type: 'diagnosis', event_date: '2025-03-02', topic: 'heavy_menstrual_bleeding', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Heavy menstrual bleeding', status: 'active', raw: { icd10: 'N92.0' } }),
+  ev({ event_id: 'ev-f03', event_type: 'diagnosis', event_date: '2025-05-19', topic: 'iron_deficiency', specialty: 'primary_care', provider_id: 'prov-pcp-01', description: 'Iron deficiency', status: 'active', raw: { icd10: 'E61.1' } }),
+  ev({ event_id: 'ev-f04', event_type: 'imaging', event_date: '2025-09-10', topic: 'pelvic_pain', specialty: 'obgyn', provider_id: 'prov-obgyn-01', description: 'Transvaginal pelvic ultrasound: no clear structural cause identified.', status: 'completed' }),
+]
+
+const madison = (lat: number, lon: number, address = 'Madison, WI') => ({ lat, lon, address })
+
+export const mockProviders: Provider[] = [
+  { provider_id: 'prov-pcp-01', name: 'Dr. Alicia Foster', specialty: 'primary_care', location: madison(43.0731, -89.4012), wait_days: 3, telehealth_available: true, in_network_plans: ['MidwestCare PPO', 'MidwestCare HMO'], estimated_cost_usd: 40, accessibility_features: ['wheelchair_accessible'], languages: ['en', 'es'], expertise_tags: ['primary_care'] },
+  { provider_id: 'prov-obgyn-01', name: 'Dr. Sarah Lindqvist', specialty: 'obgyn', location: madison(43.08, -89.39), wait_days: 5, telehealth_available: true, in_network_plans: ['MidwestCare PPO'], estimated_cost_usd: 150, accessibility_features: ['wheelchair_accessible'], languages: ['en'], expertise_tags: ['obstetrics', 'general_gynecology'] },
+  { provider_id: 'prov-original-specialist', name: 'Dr. Renee Whitfield', specialty: 'chronic_pelvic_pain', location: madison(41.8781, -87.6298, 'Chicago, IL'), wait_days: 61, telehealth_available: false, in_network_plans: [], estimated_cost_usd: 420, accessibility_features: [], languages: ['en'], expertise_tags: ['chronic_pelvic_pain', 'endometriosis'] },
+  { provider_id: 'prov-alt-best', name: 'Dr. Ifeoma Okafor', specialty: 'chronic_pelvic_pain', location: madison(43.0625, -89.4306), wait_days: 12, telehealth_available: true, in_network_plans: ['MidwestCare PPO', 'MidwestCare HMO'], estimated_cost_usd: 95, accessibility_features: ['wheelchair_accessible', 'ground_floor_entrance'], languages: ['en', 'es'], expertise_tags: ['chronic_pelvic_pain', 'pelvic_floor_dysfunction'] },
+  { provider_id: 'prov-alt-ok', name: 'Dr. Michael Chen', specialty: 'gynecology', location: madison(43.15, -89.34, 'Sun Prairie, WI'), wait_days: 21, telehealth_available: true, in_network_plans: ['MidwestCare PPO'], estimated_cost_usd: 140, accessibility_features: [], languages: ['en'], expertise_tags: ['general_gynecology'] },
+]
+
+export const mockRecord: PatientRecord = {
   patient: {
-    patient_id: 'demo-001',
-    display_name: 'Amara Lindqvist',
-    date_of_birth: '1997-04-12',
-    age: 29,
-    insurance_plan: 'NorthStar Health PPO',
-    primary_care_provider: 'Dr. Helen Marsh, MD',
-    home_location: { city: 'Ely', state: 'MN', rural: true },
-    record_sources: [
-      { source_id: 'src-lakeside', name: 'Lakeside Family Medicine', system_type: 'ehr', status: 'connected', last_synced_at: '2026-09-26T08:14:00', simulated: true },
-      { source_id: 'src-northland', name: 'Northland Regional Health', system_type: 'patient_portal', status: 'connected', last_synced_at: '2026-09-26T08:14:00', simulated: true },
-      { source_id: 'src-iron-range', name: 'Iron Range Urgent Care', system_type: 'ehr', status: 'connected', last_synced_at: '2026-09-25T21:40:00', simulated: true },
-      { source_id: 'src-labs', name: 'Arrowhead Clinical Labs', system_type: 'lab', status: 'connected', last_synced_at: '2026-09-26T06:02:00', simulated: true },
-    ],
+    patient_id: PID,
+    name: 'Maya Restrepo',
+    date_of_birth: '1996-04-12',
+    sex: 'female',
+    insurance_plan: 'MidwestCare PPO',
+    home_location: { lat: 43.0731, lon: -89.4012, address: 'Madison, WI' },
+    preferred_language: 'es',
+    mobility_constraints: [],
+    accessibility_needs: [],
   },
-  diagnoses: [
-    { diagnosis_id: 'dx-1', name: 'Chronic pelvic pain', icd10_code: 'R10.2', status: 'under_evaluation', first_recorded_date: '2025-11-04', recorded_by: 'Dr. Helen Marsh', source_id: 'src-lakeside' },
-    { diagnosis_id: 'dx-2', name: 'Heavy menstrual bleeding', icd10_code: 'N92.0', status: 'active', first_recorded_date: '2026-03-10', recorded_by: 'Dr. Helen Marsh', source_id: 'src-lakeside' },
-    { diagnosis_id: 'dx-3', name: 'Iron deficiency', icd10_code: 'E61.1', status: 'active', first_recorded_date: '2026-05-06', recorded_by: 'Dr. Helen Marsh', source_id: 'src-lakeside' },
-    { diagnosis_id: 'dx-4', name: 'Dysmenorrhea', icd10_code: 'N94.6', status: 'active', first_recorded_date: '2026-01-15', recorded_by: 'Dr. Priya Raman', source_id: 'src-northland' },
-    { diagnosis_id: 'dx-5', name: 'Seasonal allergic rhinitis', icd10_code: 'J30.2', status: 'resolved', first_recorded_date: '2023-05-02', recorded_by: 'Dr. Helen Marsh', source_id: 'src-lakeside' },
-  ],
-  medications: [
-    { medication_id: 'med-1', name: 'Norethindrone-ethinyl estradiol', dose: '1 mg / 20 mcg', frequency: 'Daily', status: 'active', start_date: '2026-01-15', prescriber: 'Dr. Priya Raman', reason: 'Dysmenorrhea' },
-    { medication_id: 'med-2', name: 'Ferrous sulfate', dose: '325 mg', frequency: 'Every other day', status: 'active', start_date: '2026-05-20', prescriber: 'Dr. Helen Marsh', reason: 'Iron deficiency' },
-    { medication_id: 'med-3', name: 'Naproxen', dose: '500 mg', frequency: 'As needed', status: 'active', start_date: '2025-12-02', prescriber: 'Iron Range Urgent Care', reason: 'Pelvic pain' },
-    { medication_id: 'med-4', name: 'Ibuprofen', dose: '400 mg', frequency: 'As needed', status: 'discontinued', start_date: '2025-11-04', end_date: '2025-12-02', prescriber: 'Dr. Helen Marsh', reason: 'Pelvic pain' },
-  ],
-  labs: [
-    {
-      lab_id: 'lab-ferritin', test_name: 'Ferritin', value: 8, unit: 'ng/mL', reference_range: '15–150', flag: 'low', collected_date: '2026-08-12', source_id: 'src-labs',
-      history: [
-        { date: '2025-11-04', value: 38 },
-        { date: '2026-03-10', value: 22 },
-        { date: '2026-05-06', value: 11 },
-        { date: '2026-08-12', value: 8 },
-      ],
-    },
-    {
-      lab_id: 'lab-hgb', test_name: 'Hemoglobin', value: 10.9, unit: 'g/dL', reference_range: '12.0–15.5', flag: 'low', collected_date: '2026-08-12', source_id: 'src-labs',
-      history: [
-        { date: '2025-11-04', value: 12.8 },
-        { date: '2026-05-06', value: 11.2 },
-        { date: '2026-08-12', value: 10.9 },
-      ],
-    },
-    {
-      lab_id: 'lab-tsh', test_name: 'TSH', value: 1.9, unit: 'mIU/L', reference_range: '0.4–4.0', flag: 'normal', collected_date: '2026-05-06', source_id: 'src-labs',
-      history: [{ date: '2026-05-06', value: 1.9 }],
-    },
-    {
-      lab_id: 'lab-hcg', test_name: 'hCG, qualitative', value: 0, unit: '', reference_range: 'Negative', flag: 'normal', collected_date: '2026-07-22', source_id: 'src-iron-range',
-      history: [{ date: '2026-07-22', value: 0 }],
-    },
-  ],
-  imaging: [
-    { imaging_id: 'img-1', modality: 'Transvaginal ultrasound', body_region: 'Pelvis', status: 'recommended', ordered_date: '2026-09-17', source_id: 'src-northland' },
-    { imaging_id: 'img-2', modality: 'Abdominal X-ray', body_region: 'Abdomen', status: 'completed', ordered_date: '2026-07-22', completed_date: '2026-07-22', summary: 'No acute findings.', source_id: 'src-iron-range' },
-  ],
-  encounters: [
-    { encounter_id: 'enc-1', date: '2025-11-04', provider_name: 'Dr. Helen Marsh', specialty: 'Family medicine', facility: 'Lakeside Family Medicine', setting: 'primary_care', reason: 'Pelvic pain', notes_summary: 'Intermittent pelvic pain for ~6 weeks, rated 4/10. Advised NSAIDs, follow up if persists.', source_id: 'src-lakeside' },
-    { encounter_id: 'enc-2', date: '2025-12-02', provider_name: 'Dr. Luis Ortega', specialty: 'Urgent care', facility: 'Iron Range Urgent Care', setting: 'urgent_care', reason: 'Lower abdominal pain', notes_summary: 'Pain 5/10, negative UA. Switched to naproxen.', source_id: 'src-iron-range' },
-    { encounter_id: 'enc-3', date: '2026-01-15', provider_name: 'Dr. Priya Raman', specialty: 'Obstetrics & gynecology', facility: 'Northland Regional Health', setting: 'specialist', reason: 'Pelvic pain, painful periods', notes_summary: 'Dysmenorrhea with pelvic pain 5/10. Started combined oral contraceptive.', source_id: 'src-northland' },
-    { encounter_id: 'enc-4', date: '2026-03-10', provider_name: 'Dr. Helen Marsh', specialty: 'Family medicine', facility: 'Lakeside Family Medicine', setting: 'primary_care', reason: 'Fatigue, heavy periods', notes_summary: 'Heavy menstrual bleeding documented. Labs ordered.', source_id: 'src-lakeside' },
-    { encounter_id: 'enc-5', date: '2026-05-06', provider_name: 'Dr. Helen Marsh', specialty: 'Family medicine', facility: 'Lakeside Family Medicine', setting: 'telehealth', reason: 'Lab review', notes_summary: 'Ferritin 11 ng/mL. Iron supplementation started.', source_id: 'src-lakeside' },
-    { encounter_id: 'enc-6', date: '2026-07-22', provider_name: 'Dr. Luis Ortega', specialty: 'Urgent care', facility: 'Iron Range Urgent Care', setting: 'urgent_care', reason: 'Severe pelvic pain', notes_summary: 'Pain 7/10, worse than prior. Imaging unremarkable. Advised gynecology follow-up.', source_id: 'src-iron-range' },
-    { encounter_id: 'enc-7', date: '2026-09-17', provider_name: 'Dr. Priya Raman', specialty: 'Obstetrics & gynecology', facility: 'Northland Regional Health', setting: 'specialist', reason: 'Persistent pelvic pain', notes_summary: 'Pain 7/10 despite hormonal therapy. Pelvic ultrasound recommended; referral to pelvic pain specialist.', source_id: 'src-northland' },
-  ],
-  referrals: [
-    { referral_id: 'ref-1', specialty: 'Obstetrics & gynecology', reason: 'Pelvic pain', status: 'completed', placed_date: '2025-12-02', referred_by: 'Iron Range Urgent Care', days_open: 0 },
-    { referral_id: 'ref-2', specialty: 'Gynecology — pelvic pain & endometriosis', reason: 'Persistent pelvic pain despite hormonal therapy', status: 'scheduled', placed_date: '2026-09-17', referred_by: 'Dr. Priya Raman', days_open: 9 },
-    { referral_id: 'ref-3', specialty: 'Pelvic ultrasound', reason: 'Evaluate persistent pelvic pain', status: 'stalled', placed_date: '2026-09-17', referred_by: 'Dr. Priya Raman', days_open: 9 },
-  ],
-  procedures: [
-    { procedure_id: 'proc-1', name: 'Pelvic examination', date: '2026-09-17', provider_name: 'Dr. Priya Raman', source_id: 'src-northland' },
-    { procedure_id: 'proc-2', name: 'Pap smear (normal)', date: '2026-01-15', provider_name: 'Dr. Priya Raman', source_id: 'src-northland' },
+  events: mockEvents,
+  providers: mockProviders,
+  record_sources: [
+    { source_id: 'src-pcp', name: 'Lakeview Primary Care', system_type: 'ehr', status: 'connected', last_synced_at: '2025-12-17T08:14:00', simulated: true },
+    { source_id: 'src-obgyn', name: 'Capitol Women’s Health', system_type: 'patient_portal', status: 'connected', last_synced_at: '2025-12-17T08:14:00', simulated: true },
+    { source_id: 'src-labs', name: 'Dane County Clinical Labs', system_type: 'lab', status: 'connected', last_synced_at: '2025-12-17T06:02:00', simulated: true },
   ],
 }

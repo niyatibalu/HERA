@@ -1,9 +1,66 @@
 // Frontend view of the HERA data model.
-// Field names are snake_case to match the backend API naming rule (e.g. `wait_days`).
-// Person 2 owns the canonical contract (API_CONTRACT.md); update these types when it lands.
+// Mirrors the backend dataclasses in backend/app/models (feature/backend) field-for-field,
+// snake_case throughout. Person 2 owns the canonical contract (docs/API_CONTRACT.md);
+// anything marked PROVISIONAL is a frontend proposal pending that contract.
 
 export type IsoDate = string
 
+// ---------- records.py ----------
+
+export type EventType = 'encounter' | 'diagnosis' | 'symptom' | 'medication' | 'lab' | 'imaging' | 'procedure' | 'referral'
+
+export interface Location {
+  lat: number
+  lon: number
+  address: string
+}
+
+export interface Patient {
+  patient_id: string
+  name: string
+  date_of_birth: IsoDate
+  sex: string
+  insurance_plan: string
+  home_location: Location
+  preferred_language: string
+  mobility_constraints: string[]
+  accessibility_needs: string[]
+}
+
+export interface HealthEvent {
+  event_id: string
+  patient_id: string
+  event_type: EventType
+  event_date: IsoDate
+  /** Normalized grouping label, e.g. "pelvic_pain". */
+  topic: string
+  description: string
+  specialty?: string | null
+  provider_id?: string | null
+  status?: string | null
+  /** 1–5, symptom events only. */
+  severity?: number | null
+  value?: number | null
+  unit?: string | null
+  source: string
+  raw?: Record<string, unknown>
+}
+
+export interface Provider {
+  provider_id: string
+  name: string
+  specialty: string
+  location: Location
+  wait_days: number
+  telehealth_available: boolean
+  in_network_plans: string[]
+  estimated_cost_usd?: number | null
+  accessibility_features: string[]
+  languages: string[]
+  expertise_tags: string[]
+}
+
+/** PROVISIONAL: presentation of the systems a record was assembled from. */
 export interface RecordSource {
   source_id: string
   name: string
@@ -13,212 +70,104 @@ export interface RecordSource {
   simulated: boolean
 }
 
-export interface Patient {
-  patient_id: string
-  display_name: string
-  date_of_birth: IsoDate
-  age: number
-  insurance_plan: string
-  primary_care_provider: string
-  home_location: { city: string; state: string; rural: boolean }
-  record_sources: RecordSource[]
-}
-
-export interface Diagnosis {
-  diagnosis_id: string
-  name: string
-  icd10_code: string
-  status: 'active' | 'resolved' | 'under_evaluation'
-  first_recorded_date: IsoDate
-  recorded_by: string
-  source_id: string
-}
-
-export interface Medication {
-  medication_id: string
-  name: string
-  dose: string
-  frequency: string
-  status: 'active' | 'discontinued'
-  start_date: IsoDate
-  end_date?: IsoDate
-  prescriber: string
-  reason: string
-}
-
-export interface LabResult {
-  lab_id: string
-  test_name: string
-  value: number
-  unit: string
-  reference_range: string
-  flag: 'low' | 'high' | 'normal'
-  collected_date: IsoDate
-  source_id: string
-  history: { date: IsoDate; value: number }[]
-}
-
-export interface ImagingStudy {
-  imaging_id: string
-  modality: string
-  body_region: string
-  status: 'completed' | 'recommended' | 'scheduled'
-  ordered_date: IsoDate
-  completed_date?: IsoDate
-  summary?: string
-  source_id: string
-}
-
-export interface Encounter {
-  encounter_id: string
-  date: IsoDate
-  provider_name: string
-  specialty: string
-  facility: string
-  setting: 'primary_care' | 'specialist' | 'urgent_care' | 'emergency' | 'telehealth'
-  reason: string
-  notes_summary: string
-  source_id: string
-}
-
-export interface Referral {
-  referral_id: string
-  specialty: string
-  reason: string
-  status: 'placed' | 'scheduled' | 'completed' | 'stalled'
-  placed_date: IsoDate
-  referred_by: string
-  days_open: number
-}
-
-export interface Procedure {
-  procedure_id: string
-  name: string
-  date: IsoDate
-  provider_name: string
-  source_id: string
-}
-
-export interface HealthRecord {
+/** PROVISIONAL: GET /patients/{id}/record */
+export interface PatientRecord {
   patient: Patient
-  diagnoses: Diagnosis[]
-  medications: Medication[]
-  labs: LabResult[]
-  imaging: ImagingStudy[]
-  encounters: Encounter[]
-  referrals: Referral[]
-  procedures: Procedure[]
+  events: HealthEvent[]
+  providers: Provider[]
+  record_sources?: RecordSource[]
 }
 
-export type TimelineCategory = 'symptom' | 'lab' | 'visit' | 'referral' | 'medication' | 'imaging'
+// ---------- trends.py ----------
 
-export interface TimelineEvent {
+export type PatternType =
+  | 'persistent_symptom'
+  | 'lab_trend'
+  | 'repeated_treatment_no_improvement'
+  | 'multiple_specialist_visits'
+  | 'unresolved_referral'
+  | 'care_gap'
+
+export type Trend = 'worsening' | 'stable' | 'improving' | 'unknown'
+
+export interface Evidence {
   event_id: string
-  date: IsoDate
-  category: TimelineCategory
-  title: string
-  detail: string
-  /** Patient-reported severity 0–10 where documented. */
-  severity?: number
-  setting?: string
-  source_id?: string
-  /** Trend flags this event contributes to. */
-  flag_ids: string[]
-}
-
-export interface TrendSeries {
-  label: string
-  unit: string
-  points: { date: IsoDate; value: number }[]
-  /** Optional reference band, e.g. lab normal range. */
-  reference_low?: number
-  reference_high?: number
+  event_date: IsoDate
+  excerpt: string
 }
 
 export interface TrendFlag {
   flag_id: string
-  pattern_type:
-    | 'symptom_progression'
-    | 'lab_decline'
-    | 'repeated_complaint'
-    | 'unresolved_referral'
-    | 'treatment_without_improvement'
-  title: string
-  summary: string
-  suggested_review: string
+  patient_id: string
+  pattern_type: PatternType
+  topic: string
+  first_seen: IsoDate
+  last_seen: IsoDate
   encounter_count: number
-  span_months: number
-  related_event_ids: string[]
-  series?: TrendSeries
-  review_status: 'flagged_for_review' | 'reviewed'
-  generated_by: string
+  trend: Trend
+  evidence: Evidence[]
+  message: string
+  action: string
   generated_at: IsoDate
 }
 
-export interface TimelineResponse {
-  events: TimelineEvent[]
-  flags: TrendFlag[]
-}
+// ---------- care.py ----------
 
-export interface Provider {
-  provider_id: string
-  name: string
-  specialty: string
-  facility: string
-  expertise: string[]
-  wait_days: number
-  distance_miles: number
-  in_network: boolean
-  insurance_note: string
-  estimated_cost_usd: number
-  telehealth_available: boolean
-  accessibility: string[]
-  next_available_date: IsoDate
-  match_score: number
-  match_reasons: string[]
-}
+export type CareState =
+  | 'need_identified'
+  | 'provider_matched'
+  | 'records_ready'
+  | 'appointment_scheduled'
+  | 'travel_planned'
+  | 'appointment_completed'
+  | 'followup_required'
+  | 'followup_completed'
+  | 'stalled'
 
-export interface ProviderSearchResponse {
-  care_need: string
-  original_provider: Provider
-  barriers: string[]
-  alternatives: Provider[]
-}
-
-export type JourneyStepStatus = 'complete' | 'in_progress' | 'stalled' | 'pending'
-
-export interface JourneyStep {
-  step_id: string
-  key:
-    | 'need_identified'
-    | 'provider_matched'
-    | 'records_shared'
-    | 'appointment_scheduled'
-    | 'travel_planned'
-    | 'appointment_completed'
-    | 'follow_up_complete'
-  label: string
-  status: JourneyStepStatus
-  completed_date?: IsoDate
-  due_date?: IsoDate
-  stalled_days?: number
-  detail?: string
+export interface StateTransition {
+  state: CareState
+  entered_at: IsoDate
+  note?: string | null
 }
 
 export interface CareJourney {
   journey_id: string
-  care_need: string
-  started_date: IsoDate
-  provider_name?: string
-  appointment_date?: IsoDate
-  steps: JourneyStep[]
+  patient_id: string
+  need: string
+  state: CareState
+  state_history: StateTransition[]
+  provider_id?: string | null
+  appointment_date?: IsoDate | null
+  stalled: boolean
+  stalled_reason?: string | null
 }
 
+/** PROVISIONAL: one ranked result from provider matching. */
+export interface ProviderMatch {
+  provider: Provider
+  match_score: number
+  distance_miles: number
+  in_network: boolean
+  reasons: string[]
+}
+
+/** PROVISIONAL: GET /patients/{id}/journeys/{journey_id}/provider-options */
+export interface ProviderSearchResponse {
+  journey_id: string
+  need: string
+  original: ProviderMatch
+  barriers: string[]
+  alternatives: ProviderMatch[]
+}
+
+// ---------- map (feature/access-map) ----------
+
+/** PROVISIONAL: shape requested from the access-map service. */
 export interface RouteOption {
   route_id: string
   mode: 'fastest' | 'safer' | 'transit' | 'telehealth'
   label: string
-  duration_minutes?: number
+  duration_minutes?: number | null
   summary: string
   conditions: string[]
   recommended: boolean
@@ -230,21 +179,26 @@ export interface RouteOptionsResponse {
   options: RouteOption[]
 }
 
-export type ConsentStatus = 'not_asked' | 'granted' | 'declined'
+// ---------- research.py ----------
 
 export interface ResearchConsent {
-  consent_status: ConsentStatus
-  updated_at?: IsoDate
+  patient_id: string
+  consent: boolean
+  consent_timestamp?: IsoDate | null
+  scope: string
+  revoked: boolean
+  revoked_timestamp?: IsoDate | null
 }
 
 export interface StudyMatch {
   study_id: string
-  title: string
-  sponsor: string
-  summary: string
-  match_criteria: string[]
-  location: string
-  remote_option: boolean
-  time_commitment: string
-  contact_note: string
+  /** De-identified pseudonym. The frontend never receives or shows a researcher-side identity. */
+  candidate_id: string
+  eligibility_status: string
+  criteria_satisfied: string[]
+  criteria_unknown: string[]
+  reason: string
+  /** PROVISIONAL: joined from Study so the patient sees what the study is. */
+  title?: string
+  description?: string
 }

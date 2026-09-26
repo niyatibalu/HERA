@@ -2,58 +2,54 @@ import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { ConnectedRecordCard, ConnectedSources } from '../components/ConnectedRecordCard'
 import { Alert, DataSourceNote, Loading, PageHeader } from '../components/common'
-import type { RecordSource } from '../types'
-import { formatDate } from '../lib/format'
-
-const SETTING_LABEL = {
-  primary_care: 'Primary care',
-  specialist: 'Specialist',
-  urgent_care: 'Urgent care',
-  emergency: 'Emergency',
-  telehealth: 'Telehealth',
-} as const
+import { careTeam, conditions, groupEvents, providerLookup } from '../lib/record'
+import { formatDate, humanize, specialtyLabel } from '../lib/format'
+import type { HealthEvent } from '../types'
 
 export function RecordPage() {
   const { data: r, source } = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
   if (!r) return <Loading label="Loading connected records…" />
 
-  const sourcesFor = (ids: string[]): RecordSource[] => r.patient.record_sources.filter((s) => ids.includes(s.source_id))
-  const encounters = [...r.encounters].sort((a, b) => b.date.localeCompare(a.date))
-  const specialists = [...new Map(r.encounters.map((e) => [e.provider_name, e])).values()]
+  const provider = providerLookup(r.providers)
+  const g = groupEvents(r.events)
+  const conds = conditions(r.events)
+  const team = careTeam(r)
+  const by = (evs: HealthEvent[]) => evs.map((e) => provider(e.provider_id)?.name).filter((n): n is string => !!n)
+  const openReferrals = g.referral.filter((x) => x.status !== 'completed')
 
   return (
     <>
       <PageHeader
         eyebrow="Unified health record"
         title="Connected health records"
-        lede="One view of diagnoses, medications, labs, imaging and visits gathered from every system this patient has authorized. Each item keeps a link to where it came from."
+        lede="Diagnoses, medications, labs, imaging and visits from every system the patient has authorized, shown in one place. Each item still shows who documented it."
         actions={<DataSourceNote source={source} />}
       />
 
       <Alert tone="info" title="Simulated record connection">
-        For this demo, HERA uses a fictional patient and simulated EHR / patient-portal connections. No real MyChart or hospital data is accessed.
+        This demo uses a fictional patient and a simulated EHR / patient-portal connection. HERA does not access any real MyChart or hospital data.
       </Alert>
 
       <div className="grid grid-4 section-gap">
-        <Stat label="Connected sources" value={r.patient.record_sources.length} note="EHR, portal, labs" />
-        <Stat label="Visits" value={r.encounters.length} note={`${specialists.length} clinicians`} />
-        <Stat label="Active diagnoses" value={r.diagnoses.filter((d) => d.status !== 'resolved').length} note={`${r.diagnoses.filter((d) => d.status === 'under_evaluation').length} under evaluation`} />
-        <Stat label="Open referrals" value={r.referrals.filter((x) => x.status !== 'completed').length} note={`${r.referrals.filter((x) => x.status === 'stalled').length} stalled`} />
+        <Stat label="Visits" value={g.encounter.length} note={`${team.length} clinicians · ${new Set(g.encounter.map((e) => e.specialty)).size} specialties`} />
+        <Stat label="Conditions tracked" value={conds.length} note={`${conds.filter((c) => c.status === 'ongoing').length} under evaluation`} />
+        <Stat label="Medications" value={g.medication.length} note={`${g.medication.filter((m) => m.raw?.treatment_category === 'hormonal_therapy').length} hormonal therapy trials`} />
+        <Stat label="Open referrals" value={openReferrals.length} note={openReferrals[0] ? specialtyLabel(openReferrals[0].specialty) : 'None'} />
       </div>
 
       <div className="grid grid-main section-gap">
         <div className="stack">
-          <ConnectedRecordCard title="Diagnoses" icon="stethoscope" count={r.diagnoses.length} sources={sourcesFor(r.diagnoses.map((d) => d.source_id))}>
+          <ConnectedRecordCard title="Conditions" icon="stethoscope" count={conds.length} from={by([...g.diagnosis, ...g.symptom])}>
             <div className="table-wrap">
               <table className="table">
-                <thead><tr><th>Condition</th><th>Status</th><th>First recorded</th><th>By</th></tr></thead>
+                <thead><tr><th>Condition</th><th>Status</th><th>First documented</th><th>Records</th></tr></thead>
                 <tbody>
-                  {r.diagnoses.map((d) => (
-                    <tr key={d.diagnosis_id}>
-                      <td><strong>{d.name}</strong> <span className="muted num">{d.icd10_code}</span></td>
-                      <td><StatusPill status={d.status} /></td>
-                      <td className="num nowrap">{formatDate(d.first_recorded_date, { year: true })}</td>
-                      <td>{d.recorded_by}</td>
+                  {conds.map((c) => (
+                    <tr key={c.topic}>
+                      <td><strong>{c.label}</strong> {c.icd10 && <span className="muted num">{c.icd10}</span>}</td>
+                      <td>{c.status === 'ongoing' ? <span className="badge badge-review">Under evaluation</span> : c.status === 'resolved' ? <span className="badge">Resolved</span> : <span className="badge badge-info">Active</span>}</td>
+                      <td className="num nowrap">{formatDate(c.first_seen, { year: true })}</td>
+                      <td className="num">{c.event_count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -61,21 +57,17 @@ export function RecordPage() {
             </div>
           </ConnectedRecordCard>
 
-          <ConnectedRecordCard title="Recent labs" icon="lab" count={r.labs.length} sources={sourcesFor(r.labs.map((l) => l.source_id))}>
+          <ConnectedRecordCard title="Labs" icon="lab" count={g.lab.length} from={by(g.lab)}>
             <div className="table-wrap">
               <table className="table">
-                <thead><tr><th>Test</th><th>Result</th><th>Reference</th><th>Collected</th><th>Previous</th></tr></thead>
+                <thead><tr><th>Result</th><th>Value</th><th>Collected</th><th>Ordered by</th></tr></thead>
                 <tbody>
-                  {r.labs.map((l) => (
-                    <tr key={l.lab_id}>
-                      <td><strong>{l.test_name}</strong></td>
-                      <td className="num">
-                        {l.test_name.startsWith('hCG') ? 'Negative' : `${l.value} ${l.unit}`}{' '}
-                        {l.flag !== 'normal' && <span className="badge badge-review">{l.flag === 'low' ? 'Low' : 'High'}</span>}
-                      </td>
-                      <td className="num muted">{l.reference_range}</td>
-                      <td className="num nowrap">{formatDate(l.collected_date, { year: true })}</td>
-                      <td className="num muted">{l.history.length > 1 ? l.history.slice(0, -1).map((h) => h.value).join(' → ') : '—'}</td>
+                  {g.lab.map((l) => (
+                    <tr key={l.event_id}>
+                      <td>{l.description}</td>
+                      <td className="num nowrap"><strong>{l.value} {l.unit}</strong></td>
+                      <td className="num nowrap">{formatDate(l.event_date, { year: true })}</td>
+                      <td>{provider(l.provider_id)?.name}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -83,98 +75,90 @@ export function RecordPage() {
             </div>
           </ConnectedRecordCard>
 
-          <ConnectedRecordCard title="Visits" icon="calendar" count={encounters.length} sources={sourcesFor(encounters.map((e) => e.source_id))}>
+          <ConnectedRecordCard title="Visits" icon="calendar" count={g.encounter.length} from={by(g.encounter)}>
             <ul className="list">
-              {encounters.map((e) => (
-                <li key={e.encounter_id}>
-                  <div className="list-main">
-                    <div className="row" style={{ gap: 8 }}>
-                      <span className="list-title">{e.reason}</span>
-                      <span className="badge">{SETTING_LABEL[e.setting]}</span>
+              {g.encounter.map((e) => {
+                const notes = r.events.filter((x) => x.event_date === e.event_date && x.event_type === 'symptom')
+                return (
+                  <li key={e.event_id}>
+                    <div className="list-main">
+                      <div className="row" style={{ gap: 8 }}>
+                        <span className="list-title">{humanize(e.topic)}</span>
+                        <span className="badge">{specialtyLabel(e.specialty)}</span>
+                      </div>
+                      <div className="list-meta">{provider(e.provider_id)?.name}</div>
+                      <p className="note">{e.description}</p>
+                      {notes.map((n) => (
+                        <p key={n.event_id} className="note muted">
+                          Patient-reported: {n.description}{n.severity != null && <> (severity <span className="num">{n.severity}/5</span>)</>}
+                        </p>
+                      ))}
                     </div>
-                    <div className="list-meta">{e.provider_name} · {e.specialty} · {e.facility}</div>
-                    <p className="note">{e.notes_summary}</p>
-                  </div>
-                  <div className="list-aside num">{formatDate(e.date, { year: true })}</div>
-                </li>
-              ))}
+                    <div className="list-aside num nowrap">{formatDate(e.event_date, { year: true })}</div>
+                  </li>
+                )
+              })}
             </ul>
           </ConnectedRecordCard>
         </div>
 
         <div className="stack">
-          <ConnectedSources sources={r.patient.record_sources} />
+          {r.record_sources && <ConnectedSources sources={r.record_sources} />}
 
-          <ConnectedRecordCard title="Medications" icon="pill" count={r.medications.length} sources={[]}>
+          <ConnectedRecordCard title="Medications" icon="pill" count={g.medication.length} from={by(g.medication)}>
             <ul className="list">
-              {r.medications.map((m) => (
-                <li key={m.medication_id}>
+              {g.medication.map((m) => (
+                <li key={m.event_id}>
                   <div className="list-main">
-                    <div className="list-title">{m.name}</div>
-                    <div className="list-meta">{m.dose} · {m.frequency} · for {m.reason.toLowerCase()}</div>
+                    <div className="list-title">{m.description}</div>
                     <div className="list-meta">
-                      {m.prescriber} · {m.end_date ? 'from' : 'since'} {formatDate(m.start_date, { year: true })}
-                      {m.end_date && ` – ${formatDate(m.end_date, { year: true })}`}
+                      For {humanize(m.topic).toLowerCase()} · {provider(m.provider_id)?.name} · {formatDate(m.event_date, { year: true })}
                     </div>
                   </div>
-                  <span className={`badge ${m.status === 'active' ? 'badge-good' : ''}`}>{m.status === 'active' ? 'Active' : 'Stopped'}</span>
+                  <span className={`badge ${m.status === 'active' ? 'badge-good' : ''}`}>{humanize(m.status ?? 'active')}</span>
                 </li>
               ))}
             </ul>
           </ConnectedRecordCard>
 
-          <ConnectedRecordCard title="Imaging" icon="scan" count={r.imaging.length} sources={sourcesFor(r.imaging.map((i) => i.source_id))}>
+          <ConnectedRecordCard title="Imaging & procedures" icon="scan" count={g.imaging.length + g.procedure.length} from={by([...g.imaging, ...g.procedure])}>
             <ul className="list">
-              {r.imaging.map((i) => (
-                <li key={i.imaging_id}>
+              {[...g.imaging, ...g.procedure].map((i) => (
+                <li key={i.event_id}>
                   <div className="list-main">
-                    <div className="list-title">{i.modality}</div>
-                    <div className="list-meta">
-                      {i.body_region} · ordered {formatDate(i.ordered_date)}
-                      {i.summary && ` · ${i.summary}`}
-                    </div>
+                    <div className="list-title">{i.description}</div>
+                    <div className="list-meta">{provider(i.provider_id)?.name} · {formatDate(i.event_date, { year: true })}</div>
                   </div>
-                  <span className={`badge ${i.status === 'recommended' ? 'badge-stalled' : i.status === 'completed' ? 'badge-good' : 'badge-info'}`}>
-                    {i.status === 'recommended' ? 'Not yet scheduled' : i.status === 'completed' ? 'Completed' : 'Scheduled'}
-                  </span>
+                  <span className="badge badge-good">{humanize(i.status ?? 'completed')}</span>
                 </li>
               ))}
             </ul>
           </ConnectedRecordCard>
 
-          <ConnectedRecordCard title="Referrals" icon="arrow" count={r.referrals.length} sources={[]}>
+          <ConnectedRecordCard title="Referrals" icon="arrow" count={g.referral.length} from={by(g.referral)}>
             <ul className="list">
-              {r.referrals.map((x) => (
-                <li key={x.referral_id}>
+              {g.referral.map((x) => (
+                <li key={x.event_id}>
                   <div className="list-main">
-                    <div className="list-title">{x.specialty}</div>
-                    <div className="list-meta">{x.reason} · {x.referred_by} · {formatDate(x.placed_date, { year: true })}</div>
+                    <div className="list-title">{specialtyLabel(x.specialty)}</div>
+                    <div className="list-meta">{x.description}</div>
+                    <div className="list-meta">{provider(x.provider_id)?.name} · {formatDate(x.event_date, { year: true })}</div>
                   </div>
-                  <span className={`badge ${x.status === 'stalled' ? 'badge-stalled' : x.status === 'completed' ? 'badge-good' : 'badge-info'}`}>
-                    {x.status[0].toUpperCase() + x.status.slice(1)}
-                  </span>
+                  <span className={`badge ${x.status === 'completed' ? 'badge-good' : 'badge-review'}`}>{humanize(x.status ?? 'pending')}</span>
                 </li>
               ))}
             </ul>
           </ConnectedRecordCard>
 
-          <ConnectedRecordCard title="Specialists & procedures" icon="user" sources={sourcesFor(r.procedures.map((p) => p.source_id))}>
+          <ConnectedRecordCard title="Care team" icon="user" count={team.length} from={[]}>
             <ul className="list">
-              {specialists.map((e) => (
-                <li key={e.provider_name}>
+              {team.map(({ provider: p, visits }) => (
+                <li key={p!.provider_id}>
                   <div className="list-main">
-                    <div className="list-title">{e.provider_name}</div>
-                    <div className="list-meta">{e.specialty} · {e.facility}</div>
+                    <div className="list-title">{p!.name}</div>
+                    <div className="list-meta">{specialtyLabel(p!.specialty)} · {p!.location.address}</div>
                   </div>
-                </li>
-              ))}
-              {r.procedures.map((p) => (
-                <li key={p.procedure_id}>
-                  <div className="list-main">
-                    <div className="list-title">{p.name}</div>
-                    <div className="list-meta">{p.provider_name} · {formatDate(p.date, { year: true })}</div>
-                  </div>
-                  <span className="badge">Procedure</span>
+                  <span className="badge num">{visits} visits</span>
                 </li>
               ))}
             </ul>
@@ -193,10 +177,4 @@ function Stat({ label, value, note }: { label: string; value: number; note: stri
       <div className="stat-note">{note}</div>
     </div>
   )
-}
-
-function StatusPill({ status }: { status: 'active' | 'resolved' | 'under_evaluation' }) {
-  if (status === 'under_evaluation') return <span className="badge badge-review">Under evaluation</span>
-  if (status === 'resolved') return <span className="badge">Resolved</span>
-  return <span className="badge badge-info">Active</span>
 }

@@ -4,26 +4,33 @@ import { useApi } from '../api/useApi'
 import { Alert, Card, CardLink, DataSourceNote, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
 import { TrendFlag } from '../components/TrendFlag'
-import { attentionItems } from '../lib/attention'
-import { formatDate, formatMonth } from '../lib/format'
+import { attentionItems, isComplete, journeySteps } from '../lib/journey'
+import { careTeam, groupEvents, providerLookup } from '../lib/record'
+import { daysBetween, formatDate, formatMonth, specialtyLabel } from '../lib/format'
+import { DEMO_TODAY } from '../mocks/record'
 
 export function HomePage() {
   const record = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
-  const timeline = useApi(() => api.getTimeline(DEMO_PATIENT_ID), 'timeline')
+  const flags = useApi(() => api.getFlags(DEMO_PATIENT_ID), 'flags')
   const journeys = useApi(() => api.getJourneys(DEMO_PATIENT_ID), 'journeys')
 
-  if (!record.data || !timeline.data || !journeys.data) return <Loading label="Loading your care overview…" />
+  if (!record.data || !flags.data || !journeys.data) return <Loading label="Loading your care overview…" />
 
   const r = record.data
-  const attention = attentionItems(journeys.data)
-  const firstName = r.patient.display_name.split(' ')[0]
-  const activeJourneys = journeys.data.filter((j) => j.steps.some((s) => s.status !== 'complete'))
-  const upcoming = journeys.data.filter((j) => j.appointment_date).sort((a, b) => a.appointment_date!.localeCompare(b.appointment_date!))
-  const openReferrals = r.referrals.filter((x) => x.status !== 'completed')
-  const recentEvents = [...timeline.data.events].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
-  const topFlag = timeline.data.flags[0]
-  const firstEncounter = [...r.encounters].sort((a, b) => a.date.localeCompare(b.date))[0]
-  const clinicians = new Set(r.encounters.map((e) => e.provider_name)).size
+  const provider = providerLookup(r.providers)
+  const g = groupEvents(r.events)
+  const attention = attentionItems(journeys.data, DEMO_TODAY)
+  const firstName = r.patient.name.split(' ')[0]
+  const active = journeys.data.filter((j) => !isComplete(j))
+  const upcoming = journeys.data
+    .filter((j) => j.appointment_date && j.appointment_date >= DEMO_TODAY)
+    .sort((a, b) => a.appointment_date!.localeCompare(b.appointment_date!))
+  const openReferrals = g.referral.filter((x) => x.status !== 'completed')
+  const recent = r.events.filter((e) => e.event_type !== 'diagnosis').sort((a, b) => b.event_date.localeCompare(a.event_date)).slice(0, 5)
+  const flagged = new Set(flags.data.flatMap((f) => f.evidence.map((e) => e.event_id)))
+  const topFlag = flags.data[0]
+  const firstVisit = g.encounter[g.encounter.length - 1]
+  const team = careTeam(r)
 
   return (
     <>
@@ -32,9 +39,8 @@ export function HomePage() {
         title={`Welcome back, ${firstName}`}
         lede={
           <>
-            Your care is connected across <strong>{r.patient.record_sources.length} health systems</strong>,{' '}
-            <strong>{clinicians} clinicians</strong> and <strong>{r.encounters.length} visits</strong> since{' '}
-            {formatDate(firstEncounter.date, { year: true })}. HERA keeps the whole story together so nothing gets lost between appointments.
+            HERA has connected <strong>{g.encounter.length} visits</strong> with <strong>{team.length} clinicians</strong>
+            {firstVisit && <> since {formatDate(firstVisit.event_date, { year: true })}</>} into one health story, so nothing gets lost between appointments.
           </>
         }
         actions={<DataSourceNote source={record.source} />}
@@ -44,16 +50,7 @@ export function HomePage() {
         <section aria-labelledby="attention-h" className="stack-sm" style={{ marginBottom: 24 }}>
           <h2 id="attention-h" className="section-label">Needs attention</h2>
           {attention.map((a) => (
-            <Alert
-              key={a.id}
-              tone={a.tone}
-              title={a.title}
-              action={
-                <Link className="btn btn-secondary btn-sm" to={a.tone === 'review' ? '/access#travel' : '/journey'}>
-                  {a.tone === 'review' ? 'Compare routes' : 'View journey'}
-                </Link>
-              }
-            >
+            <Alert key={a.id} tone={a.tone} title={a.title} action={<Link className="btn btn-secondary btn-sm" to={a.action.to}>{a.action.label}</Link>}>
               {a.detail}
             </Alert>
           ))}
@@ -62,47 +59,57 @@ export function HomePage() {
 
       <div className="grid grid-main">
         <div className="stack">
-          <Card icon="journey" title="Active care" sub={`${activeJourneys.length} care needs in progress`} action={<CardLink to="/journey">Care journey</CardLink>}>
-            <ul className="list">
-              {activeJourneys.map((j) => {
-                const done = j.steps.filter((s) => s.status === 'complete').length
-                const stalled = j.steps.some((s) => s.status === 'stalled')
-                return (
-                  <li key={j.journey_id}>
-                    <div className="list-main">
-                      <div className="list-title">{j.care_need}</div>
-                      <div className="list-meta">
-                        {j.provider_name ? `${j.provider_name} · ` : ''}started {formatDate(j.started_date)}
+          <Card icon="journey" title="Active care" sub={`${active.length} care ${active.length === 1 ? 'need' : 'needs'} in progress`} action={<CardLink to="/journey">Care journey</CardLink>}>
+            {active.length === 0 ? (
+              <div className="empty">All care pathways are complete.</div>
+            ) : (
+              <ul className="list">
+                {active.map((j) => {
+                  const steps = journeySteps(j)
+                  const done = steps.filter((s) => s.status === 'complete').length
+                  const p = provider(j.provider_id)
+                  return (
+                    <li key={j.journey_id}>
+                      <div className="list-main">
+                        <div className="list-title">{j.need}</div>
+                        <div className="list-meta">
+                          {p ? `${p.name} · ` : ''}started {formatDate(j.state_history[0]?.entered_at ?? DEMO_TODAY)}
+                        </div>
+                        <div className="progress" aria-label={`${done} of ${steps.length} steps complete`}>
+                          {steps.map((s) => <span key={s.state} className={`progress-seg is-${s.status}`} />)}
+                        </div>
                       </div>
-                      <div className="progress" aria-label={`${done} of ${j.steps.length} steps complete`}>
-                        {j.steps.map((s) => <span key={s.step_id} className={`progress-seg is-${s.status}`} />)}
+                      <div className="list-aside">
+                        {j.stalled ? (
+                          <span className="badge badge-stalled"><Icon name="pause" size={12} /> Stalled</span>
+                        ) : (
+                          <span className="badge badge-accent num">{done}/{steps.length} steps</span>
+                        )}
                       </div>
-                    </div>
-                    <div className="list-aside">
-                      {stalled ? (
-                        <span className="badge badge-stalled"><Icon name="pause" size={12} /> Stalled</span>
-                      ) : (
-                        <span className="badge badge-accent num">{done}/{j.steps.length} steps</span>
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </Card>
 
           <Card icon="clock" title="Recent health changes" sub="From all connected records" action={<CardLink to="/timeline">Full timeline</CardLink>}>
             <ul className="list">
-              {recentEvents.map((e) => {
-                const m = formatMonth(e.date)
+              {recent.map((e) => {
+                const m = formatMonth(e.event_date)
                 return (
                   <li key={e.event_id}>
-                    <span className="date-chip num"><span>{m.month}</span>{e.date.slice(8, 10)}</span>
+                    <span className="date-chip num"><span>{m.month}</span>{m.day}</span>
                     <div className="list-main">
-                      <div className="list-title">{e.title}</div>
-                      <div className="list-meta">{e.setting}</div>
+                      <div className="list-title">{e.description}</div>
+                      <div className="list-meta">{specialtyLabel(e.specialty)}{provider(e.provider_id) ? ` · ${provider(e.provider_id)!.name}` : ''}</div>
                     </div>
-                    {e.flag_ids.length > 0 && <Icon name="flag" size={14} className="flag-dot" />}
+                    {flagged.has(e.event_id) && (
+                      <span className="flag-dot" title="Part of a pattern flagged for clinician review">
+                        <Icon name="flag" size={14} />
+                        <span className="visually-hidden">Flagged for clinician review</span>
+                      </span>
+                    )}
                   </li>
                 )
               })}
@@ -113,17 +120,20 @@ export function HomePage() {
         <div className="stack">
           <Card icon="calendar" title="Upcoming" action={<CardLink to="/journey">All</CardLink>}>
             {upcoming.length === 0 ? (
-              <div className="empty">No upcoming appointments</div>
+              <div className="empty stack-sm" style={{ alignItems: 'center' }}>
+                <span>No specialist visit booked yet.</span>
+                <Link to="/access" className="btn btn-primary btn-sm">Find care options</Link>
+              </div>
             ) : (
               <ul className="list">
                 {upcoming.map((j) => {
                   const m = formatMonth(j.appointment_date!)
                   return (
                     <li key={j.journey_id}>
-                      <span className="date-chip date-chip-accent num"><span>{m.month}</span>{j.appointment_date!.slice(8, 10)}</span>
+                      <span className="date-chip date-chip-accent num"><span>{m.month}</span>{m.day}</span>
                       <div className="list-main">
-                        <div className="list-title">{j.care_need.split(' — ')[0]}</div>
-                        <div className="list-meta">{j.provider_name}</div>
+                        <div className="list-title">{j.need}</div>
+                        <div className="list-meta">{provider(j.provider_id)?.name}</div>
                       </div>
                     </li>
                   )
@@ -133,7 +143,7 @@ export function HomePage() {
           </Card>
 
           {topFlag && (
-            <Card icon="flag" title="Health trend" sub="Longitudinal pattern across your records" action={<CardLink to="/timeline">Details</CardLink>}>
+            <Card icon="flag" title="Health trend" sub="Pattern across your connected records" action={<CardLink to="/timeline">Details</CardLink>}>
               <div className="card-body">
                 <TrendFlag flag={topFlag} compact />
               </div>
@@ -141,19 +151,21 @@ export function HomePage() {
           )}
 
           <Card icon="arrow" title="Active referrals">
-            <ul className="list">
-              {openReferrals.map((x) => (
-                <li key={x.referral_id}>
-                  <div className="list-main">
-                    <div className="list-title">{x.specialty}</div>
-                    <div className="list-meta">Placed {formatDate(x.placed_date)} by {x.referred_by}</div>
-                  </div>
-                  <span className={`badge ${x.status === 'stalled' ? 'badge-stalled' : x.status === 'scheduled' ? 'badge-good' : ''}`}>
-                    {x.status === 'stalled' ? `Stalled · ${x.days_open}d` : x.status === 'scheduled' ? 'Scheduled' : 'Open'}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {openReferrals.length === 0 ? (
+              <div className="empty">No open referrals</div>
+            ) : (
+              <ul className="list">
+                {openReferrals.map((x) => (
+                  <li key={x.event_id}>
+                    <div className="list-main">
+                      <div className="list-title">{specialtyLabel(x.specialty)}</div>
+                      <div className="list-meta">Placed {formatDate(x.event_date)} by {provider(x.provider_id)?.name ?? 'care team'}</div>
+                    </div>
+                    <span className="badge badge-review num">Open {daysBetween(x.event_date, DEMO_TODAY)}d</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
       </div>

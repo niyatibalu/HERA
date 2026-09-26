@@ -1,27 +1,17 @@
-// SYNTHETIC DATA — fictional studies for the consent flow demo.
+// SYNTHETIC DATA — mirrors backend/app/data/studies.py and the StudyMatch shape in
+// backend/app/models/research.py. Only studies Maya is potentially eligible for are returned.
 import type { StudyMatch } from '../types'
 
 export const mockStudyMatches: StudyMatch[] = [
   {
-    study_id: 'study-ppain',
-    title: 'Pelvic Pain Research Study',
-    sponsor: 'Upper Midwest Women’s Health Research Consortium',
-    summary: 'An observational study following how chronic pelvic pain changes over time and how people respond to different treatments.',
-    match_criteria: ['Age range 18–35', 'Pelvic pain for more than 6 months', 'Previous hormonal therapy', 'Symptoms continuing'],
-    location: 'Duluth, MN',
-    remote_option: true,
-    time_commitment: 'Monthly 10-minute symptom survey for 12 months',
-    contact_note: 'The study team will not see your name or contact details unless you choose to reach out to them.',
-  },
-  {
-    study_id: 'study-iron',
-    title: 'Iron Deficiency in Heavy Menstrual Bleeding',
-    sponsor: 'Northland Regional Health Research Institute',
-    summary: 'Comparing iron replacement approaches for people with heavy periods and low ferritin.',
-    match_criteria: ['Heavy menstrual bleeding documented', 'Ferritin below 15 ng/mL', 'Oral iron already tried'],
-    location: 'Virginia, MN',
-    remote_option: false,
-    time_commitment: '3 visits over 6 months',
-    contact_note: 'The study team will not see your name or contact details unless you choose to reach out to them.',
+    study_id: 'study-a',
+    candidate_id: 'cand-7f3a91',
+    eligibility_status: 'potentially_eligible',
+    criteria_satisfied: ['Age range 18–35', 'Pelvic pain documented for more than 6 months', 'Previous hormonal therapy'],
+    criteria_unknown: [],
+    reason: 'Your de-identified history meets the study’s published criteria for age range, symptom duration and treatment history.',
+    title: 'Chronic Pelvic Pain Hormonal Therapy Outcomes Study',
+    description:
+      'Observational study following women with chronic pelvic pain who have tried hormonal therapy, to understand what predicts response.',
   },
 ]
