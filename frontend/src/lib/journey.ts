@@ -120,7 +120,7 @@ export function attentionItems(journeys: CareJourney[], today: string): Attentio
         id: j.journey_id,
         tone: 'review',
         title: `Plan travel for your ${humanize(j.need).toLowerCase()}`,
-        detail: 'Winter weather is possible. Compare safer routes and alternatives.',
+        detail: 'Winter weather is possible. Compare lower-risk routes and alternatives.',
         journey_id: j.journey_id,
         action: { label: 'Compare routes', to: `/journey#travel-${j.journey_id}` },
       })

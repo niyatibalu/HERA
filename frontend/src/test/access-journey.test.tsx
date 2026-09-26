@@ -40,9 +40,9 @@ describe('Care access and care journey', () => {
     expect(within(updated).queryByText(/stalled/i)).not.toBeInTheDocument()
     expect(within(updated).getByText('Dr. Ifeoma Okafor · Appointment Dec 29, 2025')).toBeInTheDocument()
 
-    await user.click(within(updated).getByRole('radio', { name: /safer route/i }))
-    await user.click(within(updated).getByRole('button', { name: /use safer route/i }))
-    expect(await within(updated).findByText(/safer route selected/i)).toBeInTheDocument()
+    await user.click(within(updated).getByRole('radio', { name: /lower-risk route/i }))
+    await user.click(within(updated).getByRole('button', { name: /use lower-risk route/i }))
+    expect(await within(updated).findByText(/lower-risk route selected/i)).toBeInTheDocument()
     expect(within(updated).queryByRole('radiogroup')).not.toBeInTheDocument()
   })
 
