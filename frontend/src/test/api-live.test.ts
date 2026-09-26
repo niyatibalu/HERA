@@ -73,3 +73,19 @@ describe('API client (live backend)', () => {
     expect(r.data[0].journey_id).toBe('jr-specialist')
   })
 })
+
+describe('API client (access map)', () => {
+  it('passes the chosen provider as the route destination', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      urls.push(url)
+      return json({ destination: 'Dr. Ifeoma Okafor — Madison, WI', appointment_date: '2025-12-29', options: [] })
+    }))
+    vi.resetModules()
+    vi.stubEnv('VITE_HERA_MAP_URL', 'http://map.test')
+    const { api } = await import('../api/client')
+    const r = await api.getRouteOptions('maya-001', 'journey-0001', 'prov-alt-best')
+    expect(r.source).toBe('live')
+    expect(urls[0]).toBe('http://map.test/routes?patient_id=maya-001&journey_id=journey-0001&provider_id=prov-alt-best')
+  })
+})

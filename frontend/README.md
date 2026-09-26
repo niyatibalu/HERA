@@ -54,7 +54,7 @@ When a URL is unset, or a request fails, the UI falls back to synthetic data in 
 | Care access | `GET /patients/{id}/providers?specialty=`, `POST /care-journeys/{id}/advance` ×3 when a provider is chosen |
 | Care journey | `GET /patients/{id}/care-journeys`, `POST …/advance {state: travel_planned}` |
 | Research | `GET/POST /patients/{id}/research-consent`, `GET /study-matches`, `GET /studies` (for titles) |
-| Travel options | `GET {MAP_URL}/routes?patient_id=&journey_id=` (**proposed**; not yet built by access-map) |
+| Travel options | `GET {MAP_URL}/routes?patient_id=&journey_id=&provider_id=` (see `docs/MAP_API.md` on `feature/access-map`) |
 
 Frontend-only presentation shapes (not part of the contract): `PatientRecord`, `ProviderOptions`, `RecordSource`, and the `RouteOption` proposal. See `src/types.ts`.
 

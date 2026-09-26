@@ -93,7 +93,7 @@ export const mockRouteOptions: RouteOptionsResponse = {
   appointment_date: '2025-12-29',
   options: [
     { route_id: 'r-fast', mode: 'fastest', label: 'Fastest route', duration_minutes: 12, summary: 'Residential streets via Regent St', conditions: ['Ice advisory', 'Unplowed side streets'], recommended: false },
-    { route_id: 'r-safe', mode: 'safer', label: 'Safer route', duration_minutes: 16, summary: 'Beltline (US-12) and Park St, both major roads', conditions: ['Priority plow routes', 'Passes 2 medical facilities'], recommended: true },
+    { route_id: 'r-safe', mode: 'safer', label: 'Lower-risk route', duration_minutes: 16, summary: 'Beltline (US-12) and Park St, both major roads', conditions: ['Priority plow routes', 'Passes 2 medical facilities'], recommended: true },
     { route_id: 'r-transit', mode: 'transit', label: 'Public transit', duration_minutes: 31, summary: 'Metro Transit Route A with 1 transfer', conditions: ['Step-free buses', '6 min walk'], recommended: false },
     { route_id: 'r-tele', mode: 'telehealth', label: 'Telehealth alternative', summary: 'Video intake with Dr. Okafor’s clinic', conditions: ['Available Dec 22'], recommended: false },
   ],
