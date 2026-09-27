@@ -83,8 +83,9 @@ app for the demo; it is not production authentication (the other API routes are 
    **Mon, Dec 29 at 5:30 PM**, then **Book**. The confirmation has **Next: plan your trip**.
    **Care → Appointments** shows the booking with **Reschedule** and **Cancel appointment** (asks first, records a reason).
    Optional: tick **Planning for pregnancy** on the journey's travel step (or **I'm pregnant** in preferences). The top route
-   becomes *Recommended for pregnancy*, and each route shows a ✓/✕ pregnancy check (distance to labor & delivery care,
-   places to stop, icy stretches, weather, walking). Clinicians experienced with pregnancy get a badge and rank higher.
+   becomes *Recommended for pregnancy*, and each route shows a ✓/✕ pregnancy check: smooth ride vs potholes, public
+   restrooms, food & water stops, construction dust and air quality, benches on transit walks, and distance to labor & delivery care.
+   The map also marks restrooms, food/water stops and benches. Clinicians experienced with pregnancy get a badge and rank higher.
 5. **Care → Journey** (`/journey`): steps advance through matched → records shared → scheduled.
    Under **Plan how to get there**, the embedded map scores routes for the Dec 29 appointment during a winter storm:
    - *Fastest route*: 18 min via Regent St, high weather risk, construction, unplowed side streets
