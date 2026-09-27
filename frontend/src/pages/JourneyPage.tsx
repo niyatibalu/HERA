@@ -97,6 +97,10 @@ function TravelPlanner({ journey, providerId }: { journey: CareJourneyData; prov
             {routes.source === 'demo' && ' · sample routes until the access map is connected'}
           </p>
         </div>
+        <label className="choice pregnancy-toggle">
+          <input type="checkbox" checked={pregnant} disabled={!prefs.data} onChange={(e) => prefs.data && api.savePreferences(DEMO_PATIENT_ID, { ...prefs.data, pregnant: e.target.checked })} />
+          Planning for pregnancy
+        </label>
         <button type="button" className="btn btn-primary btn-sm" disabled={!pick || saving} onClick={confirm}>
           {saving ? 'Saving…' : pick ? `Use ${pick.label.toLowerCase()}` : 'Choose an option'}
         </button>

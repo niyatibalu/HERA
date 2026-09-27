@@ -23,10 +23,11 @@ export function AccessPage() {
   const specialty = record.data ? requiredSpecialty(record.data.events) : ''
   const matches = useApi(() => api.getProviderMatches(DEMO_PATIENT_ID, specialty), `providers:${specialty}`)
   // "Find better options" links from other screens arrive with the alternatives already open.
-  const [expanded, setExpanded] = useState(params.get('show') === 'options')
+  const [expanded, setExpanded] = useState(params.get('show') === 'options' || !!params.get('book'))
   const [busy, setBusy] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [scheduling, setScheduling] = useState<ProviderMatch | null>(null)
+  const [autoOpened, setAutoOpened] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (!journeys.data || !record.data) return <Loading label="Loading care needs…" />
@@ -46,8 +47,9 @@ export function AccessPage() {
   const r = record.data
   const o = buildProviderOptions(journey, matches.data, r.events)
   const currentId = journeyProviderId(journey, r.providers)
-  const chosen = o.alternatives.find((a) => a.provider.provider_id === currentId)
   const appointment = journeyAppointmentDate(journey)
+  // Booked = has an appointment with one of these providers (a cancelled booking keeps the provider but not the date).
+  const chosen = appointment ? o.alternatives.find((a) => a.provider.provider_id === currentId) : undefined
   const showAlternatives = expanded || !!chosen
   const plan = r.patient.insurance_plan
   const referral = journey.state_history[0]
@@ -58,11 +60,21 @@ export function AccessPage() {
     requestAnimationFrame(() => document.getElementById('schedule-h')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
   }
 
+  // Rescheduling lands here with ?book=<provider_id>: open that provider's scheduler right away.
+  const rebookId = params.get('book')
+  if (rebookId && !scheduling && !appointment && !autoOpened) {
+    const m = o.alternatives.find((a) => a.provider.provider_id === rebookId)
+    if (m) {
+      setAutoOpened(true)
+      setScheduling(m)
+    }
+  }
+
   const book = async (m: ProviderMatch, b: Booking) => {
     setBusy(m.provider.provider_id)
     setError(null)
     try {
-      await api.selectProvider(DEMO_PATIENT_ID, journey.journey_id, m, b)
+      await api.selectProvider(DEMO_PATIENT_ID, journey, m, b)
       setScheduling(null)
     } catch {
       setError('Could not book this appointment. Please try again.')
@@ -138,9 +150,12 @@ export function AccessPage() {
                 tone="good"
                 title={`You're booked with ${chosen.provider.name}`}
                 action={
-                  <Link className="btn btn-primary" to="/journey">
-                    {journey.appointment_modality === 'telehealth' ? 'Next: view your journey' : 'Next: plan your trip'} <Icon name="arrow" size={16} />
-                  </Link>
+                  <div className="row">
+                    <Link className="btn btn-secondary" to="/appointments">View appointment</Link>
+                    <Link className="btn btn-primary" to="/journey">
+                      {journey.appointment_modality === 'telehealth' ? 'Next: view your journey' : 'Next: plan your trip'} <Icon name="arrow" size={16} />
+                    </Link>
+                  </div>
                 }
               >
                 {appointment ? formatDay(appointment) : ''}

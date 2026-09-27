@@ -23,6 +23,7 @@ import { DEMO_LOGIN, mockMyChartConnected, mockMyChartNotConnected, mockPreferen
 import { currentSession, setSession, type Session } from '../lib/auth'
 import { formatTime, modalityLabel, type Booking, type Modality } from '../lib/scheduling'
 import { REMATCH_NOTE_PREFIX, requiredSpecialty } from '../lib/providers'
+import { ORDER, reachedState } from '../lib/journey'
 
 export type DataSource = 'live' | 'demo'
 
@@ -192,24 +193,45 @@ export const api = {
 
   /** Books a provider by advancing the journey, setting provider_id and appointment_date on the way. */
   /** Books a provider at a chosen time by advancing the journey: matched → records shared → scheduled. */
-  async selectProvider(patientId: string, journeyId: string, match: ProviderMatch, booking: Booking) {
+  async selectProvider(patientId: string, journey: CareJourney, match: ProviderMatch, booking: Booking) {
+    // Skip steps the journey already passed (e.g. rebooking after a cancellation keeps records shared).
+    const reached = ORDER.indexOf(reachedState(journey))
     const steps = selectionSteps(match.provider.provider_id, match.provider.name, booking)
+      .filter((st) => ORDER.indexOf(st.state) > reached || st.state === 'appointment_scheduled')
+      .map((st) => ({ ...st, provider_id: match.provider.provider_id }))
+    const journeyId = journey.journey_id
     const r = await withFallback<CareJourney>(
       API_BASE,
       async (base) => {
         let j: CareJourney | undefined
-        for (const s of steps) j = await http<CareJourney>(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(s))
+        for (const st of steps) j = await http<CareJourney>(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(st))
         return j!
       },
       () => {
         const j = demoJourney(journeyId)
-        for (const s of steps) demoAdvance(journeyId, s.state, s.note)
+        for (const st of steps) demoAdvance(journeyId, st.state, st.note)
         Object.assign(j, {
           provider_id: match.provider.provider_id,
           appointment_date: booking.date,
           appointment_time: booking.time,
           appointment_modality: booking.modality,
         })
+        return clone(j)
+      },
+    )
+    notify()
+    return r
+  },
+
+  /** Cancels a booked appointment; the journey returns to "records shared" with the same provider. */
+  async cancelAppointment(patientId: string, journeyId: string, reason?: string) {
+    const r = await withFallback<CareJourney>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/care-journeys/${journeyId}/cancel-appointment`, post({ reason: reason || null })),
+      () => {
+        const j = demoJourney(journeyId)
+        Object.assign(j, { appointment_date: null, appointment_time: null, appointment_modality: null })
+        demoAdvance(journeyId, 'records_ready', `Appointment cancelled${reason ? `: ${reason}` : ''}`)
         return clone(j)
       },
     )

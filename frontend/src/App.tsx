@@ -12,6 +12,7 @@ import { AccessPage } from './pages/AccessPage'
 import { JourneyPage } from './pages/JourneyPage'
 import { ResearchPage } from './pages/ResearchPage'
 import { MapPage } from './pages/MapPage'
+import { AppointmentsPage } from './pages/AppointmentsPage'
 import { LoginPage } from './pages/LoginPage'
 import { currentSession, onSessionChange } from './lib/auth'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -51,6 +52,7 @@ function SignedInApp() {
         <Route path="access" element={<AccessPage />} />
         <Route path="journey" element={<JourneyPage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="research" element={<ResearchPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

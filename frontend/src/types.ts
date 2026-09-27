@@ -196,6 +196,8 @@ export interface RouteOption {
   summary: string
   conditions: string[]
   recommended: boolean
+  /** Present when planning for travel during pregnancy: what matters, met or not. */
+  pregnancy_check?: { label: string; ok: boolean }[] | null
 }
 
 export interface PregnancyTravel {

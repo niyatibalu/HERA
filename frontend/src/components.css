@@ -343,3 +343,25 @@ fieldset.field legend { padding: 0; margin-bottom: 8px; }
 .pregnancy-tips summary { cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 16px; font-weight: 600; list-style: none; }
 .pregnancy-tips summary::-webkit-details-marker { display: none; }
 .pregnancy-tips ul { margin: 12px 0 8px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; color: var(--ink-2); }
+
+/* Pregnancy check on route cards (RouteOptions) */
+.preg-check { list-style: none; margin: 4px 0; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.preg-check li { display: flex; gap: 6px; align-items: flex-start; line-height: 1.35; }
+.preg-check svg { flex: none; margin-top: 2px; }
+.preg-check .is-ok svg { color: var(--good); }
+.preg-check .is-no { color: var(--ink-2); }
+.preg-check .is-no svg { color: var(--review); }
+.pregnancy-toggle { margin-left: auto; }
+
+/* ---------- Appointments ---------- */
+.appointment-body { display: flex; gap: 22px; align-items: flex-start; }
+.appointment-main { flex: 1; min-width: 0; }
+.appointment-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 18px 0 0; }
+@media (max-width: 720px) { .appointment-facts { grid-template-columns: 1fr; } }
+.appointment-facts dt { font-size: 14px; color: var(--muted); }
+.appointment-facts dd { margin: 3px 0 0; font-size: 16px; font-weight: 550; display: flex; align-items: center; gap: 6px; }
+.appointment-actions { padding: 0 28px 26px; }
+.appointment-confirm { margin: 0 28px 26px; padding: 20px; border-radius: 16px; background: var(--stalled-soft); display: flex; flex-direction: column; gap: 14px; }
+.appointment-confirm .select { max-width: 320px; }
+.btn-danger { background: var(--stalled); color: #fff; }
+.btn-danger:hover { background: #8e2f22; }
