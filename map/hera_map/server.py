@@ -133,12 +133,13 @@ def handle_routes(qs):
 
 # General travel guidance commonly given for pregnancy (e.g. by ACOG and CDC). Not personal medical advice.
 PREGNANCY_TIPS = [
+    "Choose smoother roads when you can: potholes and rough pavement jolt the belly and back.",
+    "Know where the public restrooms are before you leave; you may need them more often than usual.",
+    "Bring water and a snack, and plan a stop to drink, eat, walk and stretch at least every 1–2 hours on longer drives.",
+    "On walks to and from transit, use benches to rest, and allow extra time.",
+    "Avoid lingering near construction zones: dust and exhaust can raise local air pollution, and pregnant people are more sensitive to it.",
     "Wear the lap belt low across your hips, under your belly, with the shoulder belt across your chest.",
-    "On drives over an hour or two, stop to walk and stretch, and drink water, to lower the risk of blood clots.",
-    "Bring your prenatal records or have them on your phone.",
-    "Know where the nearest hospital with labor & delivery care is along your route.",
-    "Take extra care on icy or wet walkways; balance changes during pregnancy.",
-    "Ask your clinician before long trips, especially late in pregnancy.",
+    "Know where the nearest hospital with labor & delivery care is, and ask your clinician before long trips.",
 ]
 
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "SYNTHETIC DATA. Patients and providers mirror backend/app/data/ (feature/backend) so the map works when the backend is unreachable. Facility names are fabricated; town coordinates are approximate public geography used only for population-proximity scoring. Facility 'services' (e.g. labor_delivery) are synthetic.",
+  "_comment": "SYNTHETIC DATA. Patients and providers mirror backend/app/data/ (feature/backend) so the map works when the backend is unreachable. Facility names are fabricated; town coordinates are approximate public geography used only for population-proximity scoring. Facility 'services' (e.g. labor_delivery) are synthetic. Amenities (restrooms, food, water, benches) are synthetic.",
   "patients": [
     {
       "patient_id": "maya-001",
@@ -1023,6 +1023,166 @@
       "lat": 43.1947,
       "lon": -88.729,
       "population": 23000
+    }
+  ],
+  "amenities": [
+    {
+      "amenity_id": "am-parkst-gas",
+      "name": "Park St gas station",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 43.052,
+      "lon": -89.3962
+    },
+    {
+      "amenity_id": "am-beltline-travel",
+      "name": "Beltline travel center",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 43.0342,
+      "lon": -89.418
+    },
+    {
+      "amenity_id": "am-midvale-cafe",
+      "name": "Midvale Blvd café",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 43.056,
+      "lon": -89.455
+    },
+    {
+      "amenity_id": "am-regent-coffee",
+      "name": "Regent St coffee shop",
+      "kinds": [
+        "food",
+        "water"
+      ],
+      "lat": 43.0686,
+      "lon": -89.41
+    },
+    {
+      "amenity_id": "am-univ-shelter-e",
+      "name": "University Ave bus shelter",
+      "kinds": [
+        "bench"
+      ],
+      "lat": 43.0742,
+      "lon": -89.4085
+    },
+    {
+      "amenity_id": "am-campus-library",
+      "name": "Campus library",
+      "kinds": [
+        "restroom",
+        "water",
+        "bench"
+      ],
+      "lat": 43.073,
+      "lon": -89.419
+    },
+    {
+      "amenity_id": "am-univ-shelter-w",
+      "name": "University Ave bus shelter (west)",
+      "kinds": [
+        "bench"
+      ],
+      "lat": 43.0726,
+      "lon": -89.429
+    },
+    {
+      "amenity_id": "am-mineral-pt-bench",
+      "name": "Mineral Point Rd bench",
+      "kinds": [
+        "bench"
+      ],
+      "lat": 43.064,
+      "lon": -89.432
+    },
+    {
+      "amenity_id": "am-eastwash-market",
+      "name": "E Washington Ave market",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 43.093,
+      "lon": -89.36
+    },
+    {
+      "amenity_id": "am-johnson-creek-rest",
+      "name": "I-94 rest area (Johnson Creek)",
+      "kinds": [
+        "restroom",
+        "water",
+        "bench"
+      ],
+      "lat": 43.077,
+      "lon": -88.79
+    },
+    {
+      "amenity_id": "am-oconomowoc-plaza",
+      "name": "Oconomowoc travel plaza",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 43.1,
+      "lon": -88.51
+    },
+    {
+      "amenity_id": "am-kenosha-plaza",
+      "name": "I-94 travel plaza (Kenosha)",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 42.53,
+      "lon": -87.93
+    },
+    {
+      "amenity_id": "am-beloit-rest",
+      "name": "I-39/90 rest area (Beloit)",
+      "kinds": [
+        "restroom",
+        "water",
+        "bench"
+      ],
+      "lat": 42.52,
+      "lon": -89.01
+    },
+    {
+      "amenity_id": "am-janesville-travel",
+      "name": "Janesville travel center",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 42.68,
+      "lon": -89.005
+    },
+    {
+      "amenity_id": "am-belvidere-oasis",
+      "name": "I-90 oasis (Belvidere)",
+      "kinds": [
+        "restroom",
+        "food",
+        "water"
+      ],
+      "lat": 42.205,
+      "lon": -88.66
     }
   ]
 }
