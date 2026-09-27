@@ -214,6 +214,7 @@
           <div class="conds">${o.conditions.map((c) => `<span class="badge ${RISKY.test(c) ? 'risk' : /major roads|passes|step-free|no travel/i.test(c) ? 'ok' : ''}">${esc(c)}</span>`).join('')}</div>
           ${on && o.reasons.length ? `<ul class="reasons">${o.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
           ${on && o.cautions.length ? `<ul class="reasons">${o.cautions.map((r) => `<li class="error">${esc(r)}</li>`).join('')}</ul>` : ''}
+          ${on && o.pregnancy_check ? `<ul class="preg-check" aria-label="Pregnancy check">${o.pregnancy_check.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✕'} ${esc(c.label)}</li>`).join('')}</ul>` : ''}
           ${on && factors ? `<div class="factors" aria-label="Factor scores">${factors}</div>` : ''}
         </button>`
       })

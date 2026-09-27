@@ -150,3 +150,6 @@ body.inapp .app { grid-template-columns: 360px 1fr; }
 #pregnancy-tips h3 { font-size: 13px; margin: 0 0 6px; }
 #pregnancy-tips ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
 #pregnancy-tips .ld { margin-top: 8px; font-weight: 600; }
+.preg-check { list-style: none; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: 12.5px; display: grid; gap: 3px; }
+.preg-check .ok { color: var(--good); }
+.preg-check .no { color: var(--risk); }

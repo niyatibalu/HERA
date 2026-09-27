@@ -236,6 +236,7 @@ def _pregnancy_factors(ev: RouteEval, c: RouteCandidate, samples, length: float,
     pts = [c.waypoints[0], *[p for p, _, _ in samples]]
     ld_passed = [f for f in ld if point_polyline_distance_mi((f["lat"], f["lon"]), pts) <= 3]
     ev.factors["obstetric_access"] = _clamp(0.6 * coverage + 0.4 * min(1.0, len(ld_passed)))
+    farthest = max((min(haversine_mi(p, (f["lat"], f["lon"])) for f in ld) for p, _, _ in samples), default=0.0)
 
     minutes_per_mile = ev.duration_minutes / (length or 1)
     stops = [(t["lat"], t["lon"], 2.0) for t in WORLD.towns if t["population"] >= 2000]
@@ -264,7 +265,28 @@ def _pregnancy_factors(ev: RouteEval, c: RouteCandidate, samples, length: float,
         "labor_delivery_passed": [f["name"] for f in ld_passed],
         "labor_delivery_coverage_share": round(coverage, 2),
         "longest_without_stop_minutes": round(longest_min),
+        "farthest_from_labor_delivery_mi": round(farthest, 1),
     }
+
+
+def pregnancy_check(ev: RouteEval) -> list[dict]:
+    """Plain-language checks of what matters when traveling while pregnant, each met or not."""
+    m = ev.metrics
+    far = m["farthest_from_labor_delivery_mi"]
+    checks = [{"label": f"Never more than {far:.0f} mi from a labor & delivery hospital", "ok": far <= 15}]
+    if ev.duration_minutes < 45:
+        checks.append({"label": f"Short trip ({round(ev.duration_minutes)} min), no stop needed", "ok": True})
+    else:
+        gap = m["longest_without_stop_minutes"]
+        checks.append({"label": f"A place to stop at least every {max(gap, 15)} min", "ok": gap <= 60})
+    icy = [h for h in m["road_hazards"] if any(w in h.lower() for w in ("ice", "icy", "unplowed"))]
+    checks.append({"label": "No icy or unplowed stretches reported" if not icy else f"Reported: {icy[0].lower()}", "ok": not icy})
+    checks.append({"label": f"{_weather_risk(ev).capitalize()} winter-weather exposure", "ok": _weather_risk(ev) == "low"})
+    if ev.candidate.transit:
+        t = ev.candidate.transit
+        checks.append({"label": f"{'Step-free' if t.get('step_free') else 'Not step-free'}, {t.get('walk_minutes', 0)} min walk",
+                       "ok": bool(t.get("step_free")) and t.get("walk_minutes", 0) <= 8})
+    return checks
 
 
 def _weather_risk(ev: RouteEval) -> str:
@@ -378,7 +400,7 @@ def rank(
         is_best = e is best
         c = e.candidate
         if is_best:
-            label = "HERA recommended"
+            label = "Recommended for pregnancy" if pregnant else "HERA recommended"
         elif c.transit:
             label = "Public transit"
         elif e is fastest:
@@ -394,7 +416,7 @@ def rank(
             if e is fastest:
                 reasons.append("Fastest option, and it also scores best on the configured access and risk factors.")
             elif phrases:
-                reasons.append(f"Recommended because it {_join(phrases)}.")
+                reasons.append(f"Recommended{' for travel while pregnant' if pregnant else ''} because it {_join(phrases)}.")
             else:
                 reasons.append("Highest overall access score across the configured factors.")
             if ref is not None and ref is fastest and e is not fastest:
@@ -420,6 +442,7 @@ def rank(
             "metrics": e.metrics,
             "geometry": [[round(p[0], 5), round(p[1], 5)] for p in c.waypoints],
             "generated_geometry": c.generated,
+            "pregnancy_check": pregnancy_check(e) if pregnant else None,
         })
 
     if provider.get("telehealth_available"):

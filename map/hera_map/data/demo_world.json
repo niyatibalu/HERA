@@ -781,6 +781,48 @@
       "services": [
         "restrooms"
       ]
+    },
+    {
+      "facility_id": "fac-h-watertown",
+      "name": "Watertown Regional Hospital",
+      "kind": "hospital_er",
+      "lat": 43.1947,
+      "lon": -88.729,
+      "accessibility_features": [
+        "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
+      ]
+    },
+    {
+      "facility_id": "fac-h-kenosha",
+      "name": "Kenosha Medical Center",
+      "kind": "hospital_er",
+      "lat": 42.57,
+      "lon": -87.84,
+      "accessibility_features": [
+        "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
+      ]
+    },
+    {
+      "facility_id": "fac-h-waukegan",
+      "name": "Lake County Hospital",
+      "kind": "hospital_er",
+      "lat": 42.3636,
+      "lon": -87.8448,
+      "accessibility_features": [
+        "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
+      ]
     }
   ],
   "towns": [
@@ -975,6 +1017,12 @@
       "lat": 42.0324,
       "lon": -87.7416,
       "population": 67000
+    },
+    {
+      "name": "Watertown",
+      "lat": 43.1947,
+      "lon": -88.729,
+      "population": 23000
     }
   ]
 }
