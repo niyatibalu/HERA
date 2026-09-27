@@ -145,6 +145,9 @@ class DemoStore:
             appointment_time=appointment_time, appointment_modality=appointment_modality,
         )
 
+    def cancel_appointment(self, journey_id: str, reason: Optional[str] = None) -> CareJourney:
+        return self._lifecycle.cancel_appointment(self.journeys[journey_id], self.today, reason)
+
     def check_stalled(self, journey: CareJourney) -> Optional[str]:
         return self._lifecycle.check_stalled(journey)
 

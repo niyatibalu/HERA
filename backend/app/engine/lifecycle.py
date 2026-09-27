@@ -85,6 +85,21 @@ class CareLifecycleEngine:
             journey.appointment_modality = appointment_modality
         return journey
 
+    def cancel_appointment(self, journey: CareJourney, at: date, reason: Optional[str] = None) -> CareJourney:
+        """Cancel a booked appointment: the journey goes back to 'records ready' with the same
+        provider, so the patient can rebook or choose someone else. Only allowed once booked."""
+        if journey.state not in (CareState.APPOINTMENT_SCHEDULED, CareState.TRAVEL_PLANNED) or journey.appointment_date is None:
+            raise InvalidTransitionError("there is no booked appointment to cancel")
+        note = "Appointment cancelled" + (f": {reason}" if reason else "")
+        journey.state = CareState.RECORDS_READY
+        journey.stalled = False
+        journey.stalled_reason = None
+        journey.appointment_date = None
+        journey.appointment_time = None
+        journey.appointment_modality = None
+        journey.state_history.append(StateTransition(state=CareState.RECORDS_READY, entered_at=at, note=note))
+        return journey
+
     def check_stalled(self, journey: CareJourney) -> Optional[str]:
         """Return a human-readable stall reason if this journey's current
         state has sat past its threshold with no progress, else None.

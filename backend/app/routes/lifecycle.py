@@ -64,3 +64,19 @@ def advance_journey(patient_id: str, journey_id: str, body: AdvanceRequest):
     except InvalidTransitionError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return _serialize_journey(journey)
+
+
+class CancelRequest(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=200)
+
+
+@router.post("/{patient_id}/care-journeys/{journey_id}/cancel-appointment")
+def cancel_appointment(patient_id: str, journey_id: str, body: Optional[CancelRequest] = None):
+    journey = store.journeys.get(journey_id)
+    if journey is None or journey.patient_id != patient_id:
+        raise HTTPException(status_code=404, detail="care journey not found")
+    try:
+        journey = store.cancel_appointment(journey_id, body.reason if body else None)
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return _serialize_journey(journey)
