@@ -1,5 +1,5 @@
 {
-  "_comment": "SYNTHETIC DATA. Patients and providers mirror backend/app/data/ (feature/backend) so the map works when the backend is unreachable. Facility names are fabricated; town coordinates are approximate public geography used only for population-proximity scoring.",
+  "_comment": "SYNTHETIC DATA. Patients and providers mirror backend/app/data/ (feature/backend) so the map works when the backend is unreachable. Facility names are fabricated; town coordinates are approximate public geography used only for population-proximity scoring. Facility 'services' (e.g. labor_delivery) are synthetic.",
   "patients": [
     {
       "patient_id": "maya-001",
@@ -555,6 +555,10 @@
       "lon": -89.43,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -565,6 +569,9 @@
       "lon": -89.396,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms"
       ]
     },
     {
@@ -575,6 +582,9 @@
       "lon": -89.442,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms"
       ]
     },
     {
@@ -583,7 +593,10 @@
       "kind": "urgent_care",
       "lat": 43.095,
       "lon": -89.35,
-      "accessibility_features": []
+      "accessibility_features": [],
+      "services": [
+        "restrooms"
+      ]
     },
     {
       "facility_id": "fac-h-sunprairie",
@@ -593,6 +606,10 @@
       "lon": -89.225,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -601,7 +618,10 @@
       "kind": "urgent_care",
       "lat": 43.0761,
       "lon": -89.199,
-      "accessibility_features": []
+      "accessibility_features": [],
+      "services": [
+        "restrooms"
+      ]
     },
     {
       "facility_id": "fac-h-janesville",
@@ -611,6 +631,10 @@
       "lon": -89.0187,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -621,6 +645,9 @@
       "lon": -89.0318,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms"
       ]
     },
     {
@@ -631,6 +658,10 @@
       "lon": -89.094,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -641,6 +672,10 @@
       "lon": -88.2826,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -651,6 +686,9 @@
       "lon": -88.0834,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms"
       ]
     },
     {
@@ -661,6 +699,10 @@
       "lon": -87.62,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -669,7 +711,10 @@
       "kind": "urgent_care",
       "lat": 43.0814,
       "lon": -88.9118,
-      "accessibility_features": []
+      "accessibility_features": [],
+      "services": [
+        "restrooms"
+      ]
     },
     {
       "facility_id": "fac-h-oconomowoc",
@@ -679,6 +724,10 @@
       "lon": -88.4993,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -689,6 +738,10 @@
       "lon": -88.2315,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -699,6 +752,10 @@
       "lon": -87.9365,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms",
+        "labor_delivery"
       ]
     },
     {
@@ -709,6 +766,9 @@
       "lon": -87.8212,
       "accessibility_features": [
         "wheelchair_accessible"
+      ],
+      "services": [
+        "restrooms"
       ]
     },
     {
@@ -717,7 +777,10 @@
       "kind": "clinic",
       "lat": 42.7803,
       "lon": -89.2993,
-      "accessibility_features": []
+      "accessibility_features": [],
+      "services": [
+        "restrooms"
+      ]
     }
   ],
   "towns": [

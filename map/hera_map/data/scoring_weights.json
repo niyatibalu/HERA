@@ -1,13 +1,15 @@
 {
-  "_comment": "Relative weights for route scoring. They do not need to sum to 1: each route's score is the weighted average of the factors that apply to it (e.g. transit_service only applies to transit). Override with HERA_SCORING_WEIGHTS=/path/to/file.json or ?weights=travel_time:0.4,weather:0.2 on /routes.",
+  "_comment": "Relative weights for route scoring. They do not need to sum to 1: each route's score is the weighted average of the factors that apply to it (e.g. transit_service only applies to transit). Override with HERA_SCORING_WEIGHTS=/path/to/file.json or ?weights=travel_time:0.4,weather:0.2 on /routes. obstetric_access and rest_stops apply only when planning travel during pregnancy (?pregnant=1).",
   "travel_time": 0.22,
   "weather": 0.16,
   "road_condition": 0.12,
   "construction": 0.08,
   "road_type": 0.07,
-  "isolation": 0.10,
-  "healthcare_proximity": 0.10,
+  "isolation": 0.1,
+  "healthcare_proximity": 0.1,
   "accessibility": 0.07,
   "mobility_fit": 0.08,
-  "transit_service": 0.08
+  "transit_service": 0.08,
+  "obstetric_access": 0.14,
+  "rest_stops": 0.08
 }

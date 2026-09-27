@@ -98,7 +98,8 @@ def handle_routes(qs):
     dest = (provider["location"]["lat"], provider["location"]["lon"])
     mid = ((origin[0] + dest[0]) / 2, (origin[1] + dest[1]) / 2)
     cond = load_conditions(qs, appointment.isoformat(), [origin, mid, dest])
-    result = rank(route_candidates(ctx.patient["patient_id"], origin, provider), ctx.patient, provider, cond, weights, today)
+    pregnant = (_one(qs, "pregnant", "") or "").lower() in {"1", "true", "yes"}
+    result = rank(route_candidates(ctx.patient["patient_id"], origin, provider), ctx.patient, provider, cond, weights, today, pregnant)
 
     nearby = sorted(
         ({**f, "distance_from_destination_mi": round(haversine_mi(dest, (f["lat"], f["lon"])), 1)} for f in WORLD.facilities),
@@ -126,6 +127,30 @@ def handle_routes(qs):
         "nearby_resources": nearby,
         "data_source": ctx.source,
         "disclaimer": RECOMMENDATION_NOTE,
+        "pregnancy": pregnancy_block(dest) if pregnant else None,
+    }
+
+
+# General travel guidance commonly given for pregnancy (e.g. by ACOG and CDC). Not personal medical advice.
+PREGNANCY_TIPS = [
+    "Wear the lap belt low across your hips, under your belly, with the shoulder belt across your chest.",
+    "On drives over an hour or two, stop to walk and stretch, and drink water, to lower the risk of blood clots.",
+    "Bring your prenatal records or have them on your phone.",
+    "Know where the nearest hospital with labor & delivery care is along your route.",
+    "Take extra care on icy or wet walkways; balance changes during pregnancy.",
+    "Ask your clinician before long trips, especially late in pregnancy.",
+]
+
+
+def pregnancy_block(dest) -> dict:
+    ld = [f for f in WORLD.facilities if "labor_delivery" in f.get("services", [])]
+    nearest = sorted(ld, key=lambda f: haversine_mi(dest, (f["lat"], f["lon"])))[:2]
+    return {
+        "tips": PREGNANCY_TIPS,
+        "labor_delivery_near_destination": [
+            {"name": f["name"], "distance_mi": round(haversine_mi(dest, (f["lat"], f["lon"])), 1)} for f in nearest
+        ],
+        "note": "General travel guidance for pregnancy. Ask your clinician about your situation.",
     }
 
 
