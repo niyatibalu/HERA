@@ -135,11 +135,14 @@ class DemoStore:
         note: Optional[str] = None,
         provider_id: Optional[str] = None,
         appointment_date: Optional[date] = None,
+        appointment_time: Optional[str] = None,
+        appointment_modality: Optional[str] = None,
     ) -> CareJourney:
         journey = self.journeys[journey_id]
         return self._lifecycle.advance(
             journey, new_state, self.today, note,
             provider_id=provider_id, appointment_date=appointment_date,
+            appointment_time=appointment_time, appointment_modality=appointment_modality,
         )
 
     def check_stalled(self, journey: CareJourney) -> Optional[str]:

@@ -49,6 +49,8 @@ class CareLifecycleEngine:
         note: Optional[str] = None,
         provider_id: Optional[str] = None,
         appointment_date: Optional[date] = None,
+        appointment_time: Optional[str] = None,
+        appointment_modality: Optional[str] = None,
     ) -> CareJourney:
         """Move a journey to a new state. Allows forward progress in
         STATE_ORDER, or a transition into/out of STALLED at any point --
@@ -77,6 +79,10 @@ class CareLifecycleEngine:
             journey.provider_id = provider_id
         if appointment_date is not None:
             journey.appointment_date = appointment_date
+        if appointment_time is not None:
+            journey.appointment_time = appointment_time
+        if appointment_modality is not None:
+            journey.appointment_modality = appointment_modality
         return journey
 
     def check_stalled(self, journey: CareJourney) -> Optional[str]:
