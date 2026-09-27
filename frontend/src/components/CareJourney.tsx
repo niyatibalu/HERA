@@ -4,6 +4,7 @@ import { Icon, type IconName } from './Icon'
 import { daysInState, isComplete, journeySteps, type StepStatus } from '../lib/journey'
 import { formatDate, humanize } from '../lib/format'
 import { journeyAppointmentDate } from '../lib/providers'
+import { formatTime } from '../lib/scheduling'
 
 const prettyNote = (note: string) => note.replace(/\d{4}-\d{2}-\d{2}/g, (d) => formatDate(d, { year: true }))
 
@@ -38,7 +39,7 @@ export function CareJourney({ journey, provider, today, stalledAction, children 
           <h2 className="card-title">{humanize(journey.need)}</h2>
           <div className="card-sub">
             {provider ? `${provider.name} · ` : ''}
-            {appointment ? `Appointment ${formatDate(appointment, { year: true })}` : 'No appointment yet'}
+            {appointment ? `Appointment ${formatDate(appointment, { year: true })}${journey.appointment_time ? ` at ${formatTime(journey.appointment_time)}` : ''}${journey.appointment_modality === 'telehealth' ? ' · video visit' : ''}` : 'No appointment yet'}
           </div>
         </div>
         {done ? (

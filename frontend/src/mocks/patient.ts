@@ -13,6 +13,7 @@ export const mockPreferences: CarePreferences = {
   availability: ['weekday_afternoon', 'weekday_evening'],
   telehealth: 'no_preference',
   provider_gender: 'female',
+  pregnant: false,
   updated_at: '2025-12-08',
 }
 

@@ -7,6 +7,8 @@ import { Alert, Card, DataSourceNote, Loading, PageHeader } from '../components/
 import { Icon } from '../components/Icon'
 import { PreferencesPanel } from '../components/PreferencesPanel'
 import { ProviderMatchCard } from '../components/ProviderMatchCard'
+import { Scheduler } from '../components/Scheduler'
+import { formatDay, formatTime, modalityLabel, type Booking } from '../lib/scheduling'
 import { isComplete } from '../lib/journey'
 import { buildProviderOptions, journeyAppointmentDate, journeyProviderId, prettyReason, requiredSpecialty } from '../lib/providers'
 import { formatDate, humanize } from '../lib/format'
@@ -24,6 +26,7 @@ export function AccessPage() {
   const [expanded, setExpanded] = useState(params.get('show') === 'options')
   const [busy, setBusy] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [scheduling, setScheduling] = useState<ProviderMatch | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   if (!journeys.data || !record.data) return <Loading label="Loading care needs…" />
@@ -49,13 +52,20 @@ export function AccessPage() {
   const plan = r.patient.insurance_plan
   const referral = journey.state_history[0]
 
-  const choose = async (m: ProviderMatch) => {
+  const choose = (m: ProviderMatch) => {
+    setError(null)
+    setScheduling(m)
+    requestAnimationFrame(() => document.getElementById('schedule-h')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }
+
+  const book = async (m: ProviderMatch, b: Booking) => {
     setBusy(m.provider.provider_id)
     setError(null)
     try {
-      await api.selectProvider(DEMO_PATIENT_ID, journey.journey_id, m)
+      await api.selectProvider(DEMO_PATIENT_ID, journey.journey_id, m, b)
+      setScheduling(null)
     } catch {
-      setError('Could not book this provider. Please try again.')
+      setError('Could not book this appointment. Please try again.')
     } finally {
       setBusy(null)
     }
@@ -67,7 +77,7 @@ export function AccessPage() {
       <PageHeader
         eyebrow="Care access"
         title="Find care you can actually reach"
-        lede="A referral only helps if the patient can get there. HERA weighs expertise, wait, distance, insurance, cost, telehealth and accessibility, and looks for another route when the first option doesn’t work."
+        lede="Providers ranked by what matters to you, and ones you can actually reach."
         actions={<DataSourceNote source={matches.source} />}
       />
 
@@ -95,7 +105,7 @@ export function AccessPage() {
                     )
                   }
                 >
-                  {o.barriers.map(prettyReason).join(' · ')}
+                  {o.barriers.slice(0, 3).map(prettyReason).join(' · ')}{o.barriers.length > 3 ? ` · +${o.barriers.length - 3} more` : ''}
                 </Alert>
               )}
             </>
@@ -123,14 +133,25 @@ export function AccessPage() {
           </div>
 
           {chosen && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 24 }}>
               <Alert
                 tone="good"
-                title={`Booked with ${chosen.provider.name}${appointment ? ` on ${formatDate(appointment, { year: true })}` : ''}`}
-                action={<Link className="btn btn-secondary btn-sm" to="/journey">View care journey</Link>}
+                title={`You're booked with ${chosen.provider.name}`}
+                action={
+                  <Link className="btn btn-primary" to="/journey">
+                    {journey.appointment_modality === 'telehealth' ? 'Next: view your journey' : 'Next: plan your trip'} <Icon name="arrow" size={16} />
+                  </Link>
+                }
               >
-                Longitudinal records were shared with the new provider. HERA will keep tracking this referral until follow-up is complete.
+                {appointment ? formatDay(appointment) : ''}
+                {journey.appointment_time ? ` at ${formatTime(journey.appointment_time)}` : ''}
+                {journey.appointment_modality ? ` · ${modalityLabel(journey.appointment_modality)}` : ''}. Your records were shared with the new provider.
               </Alert>
+            </div>
+          )}
+          {scheduling && !chosen && (
+            <div style={{ marginBottom: 24 }}>
+              <Scheduler match={scheduling} busy={busy !== null} onConfirm={(b) => book(scheduling, b)} onCancel={() => setScheduling(null)} />
             </div>
           )}
           {error && <Alert tone="stalled" title={error} />}
@@ -149,8 +170,8 @@ export function AccessPage() {
                     isChosen ? (
                       <span className="badge badge-good"><Icon name="check" size={12} /> Selected</span>
                     ) : (
-                      <button type="button" className={`btn ${i === 0 ? 'btn-primary' : 'btn-secondary'}`} disabled={!!chosen || busy !== null} onClick={() => choose(m)}>
-                        {busy === m.provider.provider_id ? 'Booking…' : `Choose ${m.provider.name}`}
+                      <button type="button" className={`btn ${i === 0 ? 'btn-primary' : 'btn-secondary'}`} disabled={!!chosen || busy !== null} onClick={() => choose(m)} aria-pressed={scheduling?.provider.provider_id === m.provider.provider_id}>
+                        {`Choose ${m.provider.name}`}
                       </button>
                     )
                   }

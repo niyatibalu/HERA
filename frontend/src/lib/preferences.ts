@@ -18,6 +18,6 @@ export const EXPERTISE_OPTIONS: { value: string; label: string }[] = [
   { value: 'general_gynecology', label: 'General gynecology' },
   { value: 'lgbtq_care', label: 'LGBTQ+ affirming care' },
 ]
-const TAG_LABEL: Record<string, string> = { pcos: 'PCOS', lgbtq_care: 'LGBTQ+ affirming care', minimally_invasive_surgery: 'Minimally invasive surgery' }
+const TAG_LABEL: Record<string, string> = { pcos: 'PCOS', pregnancy_care: 'Pregnancy care', lgbtq_care: 'LGBTQ+ affirming care', minimally_invasive_surgery: 'Minimally invasive surgery' }
 export const expertiseLabel = (v: string) =>
   EXPERTISE_OPTIONS.find((o) => o.value === v)?.label ?? TAG_LABEL[v] ?? v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, ' ')

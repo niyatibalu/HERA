@@ -27,6 +27,7 @@ export function PreferencesPanel({ planOnFile, home }: { planOnFile: string; hom
     { icon: 'calendar' as const, label: 'Schedule', value: p.availability.length ? p.availability.map((s) => SLOT_LABEL[s]).join(', ') : 'Any time' },
     { icon: 'video' as const, label: 'Telehealth', value: TELEHEALTH[p.telehealth] },
     { icon: 'user' as const, label: 'Clinician', value: p.provider_gender === 'no_preference' ? 'No gender preference' : `${GENDER[p.provider_gender]} clinician` },
+    ...(p.pregnant ? [{ icon: 'check' as const, label: 'Pregnancy', value: 'Pregnant · clinicians and travel adjusted' }] : []),
   ]
 
   return (
@@ -133,6 +134,13 @@ function PreferencesForm({ initial, planOnFile, onDone }: { initial: CarePrefere
             ))}
           </div>
         </fieldset>
+        <label className="field field-wide">
+          <span className="field-label">Pregnancy</span>
+          <span className="choice" style={{ alignSelf: 'flex-start' }}>
+            <input type="checkbox" checked={f.pregnant} onChange={(e) => set('pregnant', e.target.checked)} />
+            I'm pregnant: favor clinicians experienced with pregnancy and plan travel for it
+          </span>
+        </label>
         <fieldset className="field">
           <legend className="field-label">Telehealth</legend>
           <div className="choice-row">

@@ -81,6 +81,7 @@ export interface CarePreferences {
   availability: AvailabilitySlot[]
   telehealth: 'no_preference' | 'prefer_telehealth' | 'in_person_only'
   provider_gender: 'no_preference' | 'female' | 'male' | 'nonbinary'
+  pregnant: boolean
   updated_at?: IsoDate | null
 }
 
@@ -157,6 +158,8 @@ export interface CareJourney {
   state_history: StateTransition[]
   provider_id?: string | null
   appointment_date?: IsoDate | null
+  appointment_time?: string | null
+  appointment_modality?: 'in_person' | 'telehealth' | null
   stalled: boolean
   stalled_reason?: string | null
   /** Server-computed warning when the current state is past its expected window. */
@@ -195,12 +198,20 @@ export interface RouteOption {
   recommended: boolean
 }
 
+export interface PregnancyTravel {
+  tips: string[]
+  labor_delivery_near_destination: { name: string; distance_mi: number }[]
+  note: string
+}
+
 export interface RouteOptionsResponse {
   /** Destination provider (access map returns it; see docs/MAP_API.md). */
   provider_id?: string
   destination: string
   appointment_date: IsoDate
   options: RouteOption[]
+  /** Present when routes were planned for travel during pregnancy (?pregnant=1). */
+  pregnancy?: PregnancyTravel | null
 }
 
 // ---------- research.py ----------
