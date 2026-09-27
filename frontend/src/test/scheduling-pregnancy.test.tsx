@@ -10,10 +10,23 @@ const byId = (id: string) => mockProviders.find((p) => p.provider_id === id)!
 describe('Appointment slots', () => {
   it('start after the wait and follow the provider’s hours', () => {
     const okafor = availableDays(byId('prov-alt-best'), '2025-12-17')
-    expect(okafor[0]).toEqual({ date: '2025-12-29', times: ['13:30', '15:00', '17:30', '18:30'] })
+    expect(okafor[0].date).toBe('2025-12-29')
+    expect(okafor[0].slots.map((s) => s.time)).toEqual(['13:30', '15:00', '17:30', '18:30'])
     expect(okafor.map((d) => d.date)).toEqual(['2025-12-29', '2025-12-30', '2026-01-02', '2026-01-05']) // skips Dec 31 and Jan 1
     const kim = availableDays(byId('prov-pfpt-madison'), '2025-12-17') // evenings + weekends
-    for (const d of kim) expect(d.times.every((t) => ['17:30', '18:30', '10:00', '11:30'].includes(t))).toBe(true)
+    for (const d of kim) expect(d.slots.every((x) => ['17:30', '18:30', '10:00', '11:30'].includes(x.time))).toBe(true)
+  })
+
+  it('shows some times as already booked, the same on every run, never a fully booked day', () => {
+    for (const p of mockProviders) {
+      const a = availableDays(p, '2025-12-17')
+      expect(a).toEqual(availableDays(p, '2025-12-17'))
+      for (const d of a) expect(d.slots.some((x) => !x.booked)).toBe(true)
+    }
+    const all = mockProviders.flatMap((p) => availableDays(p, '2025-12-17').flatMap((d) => d.slots))
+    const share = all.filter((x) => x.booked).length / all.length
+    expect(share).toBeGreaterThan(0.2)
+    expect(share).toBeLessThan(0.6)
   })
 
   it('formats times and days', () => {

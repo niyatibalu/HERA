@@ -23,13 +23,26 @@ const weekday = (iso: string) => new Date(`${iso}T12:00:00Z`).getUTCDay()
 /** Clinics closed (month-day). */
 const HOLIDAYS = new Set(['01-01', '07-04', '12-24', '12-25', '12-31'])
 
+/** Stable pseudo-random number in [0, 1) for a string, so the same slots are taken on every run. */
+function hash01(key: string) {
+  let h = 2166136261
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619)
+  return (h >>> 0) / 4294967296
+}
+
+export interface DaySlots {
+  date: string
+  slots: { time: string; booked: boolean }[]
+}
+
 /**
- * Open appointment times for a provider (synthetic): from the first day after their wait,
- * on the days and times of day they offer, for the next `days` days that have openings.
+ * Appointment times for a provider (synthetic): from the first day after their wait, on the days
+ * and times of day they offer, for the next `days` days that have openings. About 40% of times
+ * are already taken by other patients; every listed day keeps at least one open time.
  */
-export function availableDays(provider: Provider, today: string, days = 4): { date: string; times: string[] }[] {
+export function availableDays(provider: Provider, today: string, days = 4): DaySlots[] {
   const offered = provider.availability?.length ? provider.availability : (['weekday_morning', 'weekday_afternoon'] as AvailabilitySlot[])
-  const out: { date: string; times: string[] }[] = []
+  const out: DaySlots[] = []
   for (let i = 0; out.length < days && i < 60; i++) {
     const date = addDays(today, provider.wait_days + i)
     if (HOLIDAYS.has(date.slice(5))) continue
@@ -39,7 +52,10 @@ export function availableDays(provider: Provider, today: string, days = 4): { da
       .filter((s) => (s === 'weekend') === isWeekend)
       .flatMap((s) => TIMES[s])
       .sort()
-    if (times.length) out.push({ date, times })
+    if (!times.length) continue
+    const slots = times.map((time) => ({ time, booked: hash01(`${provider.provider_id}|${date}|${time}`) < 0.4 }))
+    if (slots.every((s) => s.booked)) slots[slots.length - 1].booked = false
+    out.push({ date, slots })
   }
   return out
 }

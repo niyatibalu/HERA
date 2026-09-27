@@ -39,12 +39,25 @@ export function Scheduler({ match, busy, onConfirm, onCancel }: {
         <div className="slot-days" role="radiogroup" aria-label="Appointment time">
           {days.map((d) => (
             <div key={d.date} className="slot-day">
-              <div className="slot-day-label">{formatDay(d.date)}</div>
-              {d.times.map((t) => {
+              <div className="slot-day-label">
+                {formatDay(d.date)}
+                <span className="slot-day-open">{d.slots.filter((x) => !x.booked).length} open</span>
+              </div>
+              {d.slots.map(({ time: t, booked }) => {
                 const on = pick?.date === d.date && pick.time === t
                 return (
-                  <button key={t} type="button" role="radio" aria-checked={on} aria-label={`${formatDay(d.date)} at ${formatTime(t)}`} className={`slot ${on ? 'is-on' : ''}`} onClick={() => setPick({ date: d.date, time: t })}>
+                  <button
+                    key={t}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    disabled={booked}
+                    aria-label={`${formatDay(d.date)} at ${formatTime(t)}${booked ? ', booked' : ''}`}
+                    className={`slot ${on ? 'is-on' : ''} ${booked ? 'is-booked' : ''}`}
+                    onClick={() => setPick({ date: d.date, time: t })}
+                  >
                     {formatTime(t)}
+                    {booked && <span className="slot-note">Booked</span>}
                   </button>
                 )
               })}
