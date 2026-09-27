@@ -69,6 +69,8 @@
     })
 
   const state = { world: null, selected: null, providerMarkers: {} }
+  const amenityLayer = L.layerGroup()
+  const AMENITY_ICON = { restroom: '🚻', food: '🍴', water: '💧', bench: '🪑' }
 
   function drawWorld(world) {
     const p = world.patient
@@ -98,6 +100,12 @@
         .on('click', () => selectProvider(pr.provider_id))
         .addTo(layers.providers)
       state.providerMarkers[pr.provider_id] = m
+    }
+    for (const a of world.amenities || []) {
+      const icons = a.kinds.map((k) => AMENITY_ICON[k] || '').join('')
+      L.marker([a.lat, a.lon], { icon: L.divIcon({ className: '', html: `<span class="amenity">${icons}</span>`, iconSize: null }), title: a.name })
+        .bindTooltip(`<b>${esc(a.name)}</b><br>${esc(a.kinds.join(' · '))}`)
+        .addTo(amenityLayer)
     }
     const bounds = L.latLngBounds([home, ...world.providers.map((x) => [x.location.lat, x.location.lon])])
     map.fitBounds(bounds, { padding: [30, 30] })
@@ -238,6 +246,8 @@
 
   function renderPregnancy(p) {
     const box = $('pregnancy-tips')
+    if (p) amenityLayer.addTo(map)
+    else map.removeLayer(amenityLayer)
     if (!p) { box.hidden = true; return }
     box.hidden = false
     const ld = p.labor_delivery_near_destination.map((f) => `${esc(f.name)} (${f.distance_mi} mi)`).join(', ')
