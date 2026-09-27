@@ -51,7 +51,21 @@ HERA works with **no internet and no external APIs**:
 
 For a guaranteed-offline run: `HERA_DEMO_MODE=1 ./scripts/start_demo.sh`.
 
+## Sign in
+
+The app opens on a sign-in page. Use the synthetic demo account, or click **Use demo account**:
+
+| Email | Password |
+|---|---|
+| `maya@example.com` | `HeraDemo2025!` |
+
+It's a fictional patient with synthetic data only. The backend checks the password against a salted hash (`backend/app/routes/auth.py`).
+If the backend is down, the frontend checks the same demo account locally so the demo still opens. This gates the web
+app for the demo; it is not production authentication (the other API routes are not protected).
+
 ## Exact demo sequence (~4 min)
+
+0. **Sign in** as Maya (above).
 
 1. **Home** (`/`): "Good morning, Maya" with one priority: *Specialist referral stalled, no appointment booked after 9 days*. Below it: her care journey, latest note, upcoming care and symptoms.
 2. **Records → Connect MyChart**: show what HERA asks to read (read-only), then **Allow and connect**.
