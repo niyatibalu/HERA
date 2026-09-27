@@ -24,6 +24,7 @@ class PreferencesBody(BaseModel):
     availability: list[Slot] = []
     telehealth: Literal["no_preference", "prefer_telehealth", "in_person_only"] = "no_preference"
     provider_gender: Literal["no_preference", "female", "male", "nonbinary"] = "no_preference"
+    pregnant: bool = False
 
 
 def _require_patient(patient_id: str) -> None:

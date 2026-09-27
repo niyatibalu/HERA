@@ -35,4 +35,7 @@ class CarePreferences:
     # Visit type and clinician
     telehealth: str = "no_preference"  # TELEHEALTH_PREFERENCES
     provider_gender: str = "no_preference"  # GENDER_PREFERENCES
+    # Pregnancy: favors clinicians experienced with pregnant patients, and the web app
+    # passes it to the access map for pregnancy-aware travel planning.
+    pregnant: bool = False
     updated_at: Optional[date] = None

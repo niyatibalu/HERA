@@ -37,10 +37,11 @@ WEIGHT_EXPERTISE = 12
 WEIGHT_SCHEDULE = 8
 WEIGHT_GENDER = 10
 WEIGHT_LANGUAGE = 6
+WEIGHT_PREGNANCY = 10
 MAX_TOTAL = (
     WEIGHT_SPECIALTY_FIT + WEIGHT_NETWORK + WEIGHT_WAIT + WEIGHT_DISTANCE + WEIGHT_COST
     + WEIGHT_TELEHEALTH + WEIGHT_ACCESSIBILITY + WEIGHT_REVIEWS + WEIGHT_EXPERTISE
-    + WEIGHT_SCHEDULE + WEIGHT_GENDER + WEIGHT_LANGUAGE
+    + WEIGHT_SCHEDULE + WEIGHT_GENDER + WEIGHT_LANGUAGE + WEIGHT_PREGNANCY
 )
 
 SLOT_LABELS = {
@@ -256,6 +257,16 @@ class ProviderMatchingEngine:
                 tradeoffs.append(f"Not a {prefs.provider_gender} clinician (your preference)")
         else:
             total += WEIGHT_GENDER
+
+        # -- pregnancy experience ---------------------------------------------
+        if prefs.pregnant:
+            if "pregnancy_care" in provider.expertise_tags:
+                total += WEIGHT_PREGNANCY
+                reasons.insert(0, "Experienced caring for pregnant patients")
+            else:
+                tradeoffs.append("Not listed as experienced with pregnant patients")
+        else:
+            total += WEIGHT_PREGNANCY
 
         return ProviderMatch(
             provider=provider,
