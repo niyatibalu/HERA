@@ -168,66 +168,92 @@ ROUTES = {
 }
 
 
+CORS_HEADERS = [
+    # Hackathon demo: open CORS so the web app can call from any origin.
+    ("Access-Control-Allow-Origin", "*"),
+    ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+    ("Access-Control-Allow-Headers", "Content-Type"),
+    ("Cache-Control", "no-store"),
+]
+
+
+def _json_body(payload) -> tuple[str, bytes]:
+    return "application/json", json.dumps(payload).encode("utf-8")
+
+
+def respond(method: str, raw_path: str) -> tuple[int, list[tuple[str, str]], bytes]:
+    """Handle one request: returns (status, headers, body). Shared by the local server and WSGI."""
+    if method == "OPTIONS":
+        return 204, [("Content-Type", "text/plain"), *CORS_HEADERS], b""
+    url = urllib.parse.urlsplit(raw_path)
+    path = url.path.rstrip("/") or "/"
+    qs = urllib.parse.parse_qs(url.query)
+    if path == "/":
+        return 302, [("Location", "/map/"), *CORS_HEADERS], b""
+    if path == "/map" or url.path.startswith("/map/"):
+        return _static(url.path[len("/map"):] or "/")
+    fn = ROUTES.get(path)
+    if fn is None:
+        status, payload = 404, {"detail": f"no route {path}"}
+    else:
+        try:
+            status, payload = 200, fn(qs)
+        except ApiError as e:
+            status, payload = e.status, {"detail": e.detail}
+        except UnknownPatient as e:
+            status, payload = 404, {"detail": f"patient '{e.args[0]}' not found"}
+        except Exception as e:
+            traceback.print_exc()
+            status, payload = 500, {"detail": f"internal error: {e}"}
+    ctype, body = _json_body(payload)
+    return status, [("Content-Type", ctype), *CORS_HEADERS], body
+
+
+def _static(rel: str) -> tuple[int, list[tuple[str, str]], bytes]:
+    if rel.endswith("/"):
+        rel += "index.html"
+    target = (WEB_DIR / rel.lstrip("/")).resolve()
+    if not target.is_relative_to(WEB_DIR) or not target.is_file():
+        ctype, body = _json_body({"detail": "not found"})
+        return 404, [("Content-Type", ctype), *CORS_HEADERS], body
+    ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+    return 200, [("Content-Type", ctype), *CORS_HEADERS], target.read_bytes()
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "HERAMap/0.1"
 
     def log_message(self, fmt, *args):  # quieter, single-line logs
         log.info("%s %s", self.address_string(), fmt % args)
 
-    def _send(self, status: int, body: bytes, content_type: str):
+    def _reply(self, method: str):
+        status, headers, body = respond(method, self.path)
         self.send_response(status)
-        self.send_header("Content-Type", content_type)
+        for k, v in headers:
+            self.send_header(k, v)
         self.send_header("Content-Length", str(len(body)))
-        # Hackathon demo: open CORS so the frontend can call from any localhost port.
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        if self.command != "HEAD":
+        if method != "HEAD":
             self.wfile.write(body)
 
-    def _json(self, status: int, payload) -> None:
-        self._send(status, json.dumps(payload).encode("utf-8"), "application/json")
-
-    def do_OPTIONS(self):
-        self._send(204, b"", "text/plain")
+    def do_GET(self):
+        self._reply("GET")
 
     def do_HEAD(self):
-        self.do_GET()
+        self._reply("HEAD")
 
-    def do_GET(self):
-        url = urllib.parse.urlsplit(self.path)
-        path = url.path.rstrip("/") or "/"
-        qs = urllib.parse.parse_qs(url.query)
-        if path == "/":
-            self.send_response(302)
-            self.send_header("Location", "/map/")
-            self.end_headers()
-            return
-        if path == "/map" or url.path.startswith("/map/"):
-            return self._static(url.path[len("/map"):] or "/")
-        fn = ROUTES.get(path)
-        if fn is None:
-            return self._json(404, {"detail": f"no route {path}"})
-        try:
-            self._json(200, fn(qs))
-        except ApiError as e:
-            self._json(e.status, {"detail": e.detail})
-        except UnknownPatient as e:
-            self._json(404, {"detail": f"patient '{e.args[0]}' not found"})
-        except Exception as e:
-            traceback.print_exc()
-            self._json(500, {"detail": f"internal error: {e}"})
+    def do_OPTIONS(self):
+        self._reply("OPTIONS")
 
-    def _static(self, rel: str):
-        if rel.endswith("/"):
-            rel += "index.html"
-        target = (WEB_DIR / rel.lstrip("/")).resolve()
-        if not target.is_relative_to(WEB_DIR) or not target.is_file():
-            return self._json(404, {"detail": "not found"})
-        ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
-        self._send(200, target.read_bytes(), ctype)
+
+def app(environ, start_response):
+    """WSGI entry point (used by Vercel's Python runtime via map/app.py)."""
+    method = environ.get("REQUEST_METHOD", "GET")
+    raw = environ.get("PATH_INFO", "/") + (f"?{environ['QUERY_STRING']}" if environ.get("QUERY_STRING") else "")
+    status, headers, body = respond(method, raw)
+    reason = {200: "OK", 204: "No Content", 302: "Found", 400: "Bad Request", 404: "Not Found", 500: "Internal Server Error"}.get(status, "OK")
+    start_response(f"{status} {reason}", [*headers, ("Content-Length", str(len(body)))])
+    return [b"" if method == "HEAD" else body]
 
 
 def make_server(host: str = config.HOST, port: int = config.PORT) -> ThreadingHTTPServer:
