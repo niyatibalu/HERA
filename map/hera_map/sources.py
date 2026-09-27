@@ -63,6 +63,7 @@ class WorldData:
         self.original_referrals = raw["original_referrals"]
         self.facilities = raw["facilities"]
         self.towns = raw["towns"]
+        self.amenities = raw.get("amenities", [])
 
 
 WORLD = WorldData()
@@ -155,6 +156,7 @@ def world_payload(ctx: PatientContext) -> dict:
         "original_provider_id": ctx.original_provider_id,
         "providers": providers,
         "facilities": WORLD.facilities,
+        "amenities": WORLD.amenities,
         "towns": WORLD.towns,
         "data_source": ctx.source,
     }

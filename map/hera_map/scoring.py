@@ -23,9 +23,13 @@ from .sources import WORLD, load_json
 FACTORS = [
     "travel_time", "weather", "road_condition", "construction", "road_type",
     "isolation", "healthcare_proximity", "accessibility", "mobility_fit", "transit_service",
-    "obstetric_access", "rest_stops",  # pregnancy only
+    # pregnancy only
+    "ride_smoothness", "restrooms", "food_water", "air_quality", "walk_rest", "obstetric_access",
 ]
-PREGNANCY_FACTORS = {"obstetric_access", "rest_stops"}
+PREGNANCY_FACTORS = {"ride_smoothness", "restrooms", "food_water", "air_quality", "walk_rest", "obstetric_access"}
+# Share of each road class that rides rough (worn pavement, patches, rural shoulders); major roads ride smoother.
+ROUGHNESS = {"interstate": 0.1, "us_highway": 0.15, "state_highway": 0.25, "arterial": 0.3, "local": 0.45, "rural": 0.5}
+SENSITIVE_AQI = 101  # EPA "Unhealthy for Sensitive Groups" starts here; pregnant people are a sensitive group
 
 # How exposed each road class is to winter weather (major roads are treated and plowed first).
 WEATHER_EXPOSURE = {"interstate": 0.45, "us_highway": 0.55, "state_highway": 0.75, "arterial": 0.7, "local": 1.0, "rural": 1.0}
@@ -201,7 +205,7 @@ def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsS
         "mobility_fit": _clamp(mobility),
     }
     if pregnant:
-        _pregnancy_factors(ev, c, samples, length, is_transit)
+        _pregnancy_factors(ev, c, samples, length, is_transit, events, cond.baseline_aqi)
     if is_transit:
         t = c.transit
         ev.factors["transit_service"] = _clamp(1 - 0.15 * t.get("transfers", 0) - min(0.4, t.get("headway_minutes", 0) / 150) + (0.1 if t.get("sheltered_stops") else 0))
@@ -228,64 +232,116 @@ def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsS
     return ev
 
 
-def _pregnancy_factors(ev: RouteEval, c: RouteCandidate, samples, length: float, is_transit: bool) -> None:
-    """Access to obstetric care along the way, and how often she can stop to walk and use a restroom."""
-    ld = [f for f in WORLD.facilities if "labor_delivery" in f.get("services", [])]
-    covered = sum(per for p, _, per in samples if any(haversine_mi(p, (f["lat"], f["lon"])) <= 15 for f in ld))
-    coverage = covered / length if samples else 1.0
+def _pregnancy_factors(ev: RouteEval, c: RouteCandidate, samples, length: float, is_transit: bool, events, baseline_aqi: int) -> None:
+    """What matters most on a trip while pregnant: a smooth ride, restrooms, food and water, clean air
+    (no construction dust), benches on walks, and not being far from labor & delivery care."""
     pts = [c.waypoints[0], *[p for p, _, _ in samples]]
-    ld_passed = [f for f in ld if point_polyline_distance_mi((f["lat"], f["lon"]), pts) <= 3]
-    ev.factors["obstetric_access"] = _clamp(0.6 * coverage + 0.4 * min(1.0, len(ld_passed)))
-    farthest = max((min(haversine_mi(p, (f["lat"], f["lon"])) for f in ld) for p, _, _ in samples), default=0.0)
-
     minutes_per_mile = ev.duration_minutes / (length or 1)
-    stops = [(t["lat"], t["lon"], 2.0) for t in WORLD.towns if t["population"] >= 2000]
-    stops += [(f["lat"], f["lon"], 1.0) for f in WORLD.facilities if "restrooms" in f.get("services", [])]
-    gap = longest = 0.0
-    for p, _, per in samples:
-        if any(haversine_mi(p, (lat, lon)) <= r for lat, lon, r in stops):
-            gap = 0.0
-        else:
-            gap += per
-            longest = max(longest, gap)
-    longest_min = longest * minutes_per_mile
-    if ev.duration_minutes < 45:
-        rest = 1.0
+
+    # Ride smoothness: road-class roughness plus reported potholes / rough pavement.
+    potholes = [e for e in events if e.kind == "pothole"]
+    rough = sum(s.length_mi * ROUGHNESS[s.road_class] for s in c.segments) / (length or 1)
+    ev.factors["ride_smoothness"] = _clamp(1 - rough - 0.6 * sum(e.severity for e in potholes))
+
+    # Restrooms, food and water: amenities near the route, plus towns (>= 2,000 people) and clinics along it.
+    near = lambda lat, lon, r: point_polyline_distance_mi((lat, lon), pts) <= r
+    amen = [a for a in WORLD.amenities if near(a["lat"], a["lon"], 0.5 if length < 25 else 1.5)]
+    towns = [t for t in WORLD.towns if t["population"] >= 2000 and near(t["lat"], t["lon"], 2.0)]
+    clinics = [f for f in WORLD.facilities if "restrooms" in f.get("services", []) and near(f["lat"], f["lon"], 0.5 if length < 25 else 1.0)]
+    restroom_spots = [(a["lat"], a["lon"]) for a in amen if "restroom" in a["kinds"]] + [(t["lat"], t["lon"]) for t in towns] + [(f["lat"], f["lon"]) for f in clinics]
+    food_spots = [(a["lat"], a["lon"]) for a in amen if {"food", "water"} & set(a["kinds"])] + [(t["lat"], t["lon"]) for t in towns]
+
+    def longest_gap_min(spots, radius):
+        gap = longest = 0.0
+        for p, _, per in samples:
+            if any(haversine_mi(p, s) <= radius for s in spots):
+                gap = 0.0
+            else:
+                gap += per
+                longest = max(longest, gap)
+        return longest * minutes_per_mile
+
+    radius = 2.0 if length >= 25 else 0.6
+    restroom_gap = longest_gap_min(restroom_spots, radius)
+    food_gap = longest_gap_min(food_spots, radius)
+    if ev.duration_minutes < 45:  # short trip: what matters is having somewhere on the way
+        ev.factors["restrooms"] = 1.0 if restroom_spots else 0.4
+        ev.factors["food_water"] = 1.0 if food_spots else 0.5
     else:
-        rest = _clamp(1 - max(0.0, longest_min - 60) / 90)
-    ev.factors["rest_stops"] = rest
+        ev.factors["restrooms"] = _clamp(1 - max(0.0, restroom_gap - 45) / 75)
+        ev.factors["food_water"] = _clamp(1 - max(0.0, food_gap - 60) / 90)
+
+    # Air quality: construction zones raise dust and exhaust along the route.
+    dusty = [e for e in events if e.kind == "construction"]
+    worst_aqi = max([e.aqi or 90 for e in dusty], default=baseline_aqi)
+    ev.factors["air_quality"] = _clamp(1 - max(0, worst_aqi - 50) / 100) if dusty else _clamp(1 - max(0, baseline_aqi - 50) / 100)
+
+    # Benches on the walking part of transit trips.
+    benches = walk = 0
     if is_transit:
         t = c.transit or {}
-        if t.get("walk_minutes", 0) > 8:
+        benches, walk = t.get("benches", 0), t.get("walk_minutes", 0)
+        needed = max(1, round(walk / 3)) if walk > 3 else 0
+        ev.factors["walk_rest"] = 1.0 if needed == 0 else _clamp(benches / needed)
+        if walk > 8:
             ev.factors["mobility_fit"] = min(ev.factors["mobility_fit"], 0.5)
         if not t.get("step_free"):
             ev.factors["mobility_fit"] = min(ev.factors["mobility_fit"], 0.3)
+
+    # Labor & delivery care along the way (secondary).
+    ld = [f for f in WORLD.facilities if "labor_delivery" in f.get("services", [])]
+    covered = sum(per for p, _, per in samples if any(haversine_mi(p, (f["lat"], f["lon"])) <= 15 for f in ld))
+    ev.factors["obstetric_access"] = _clamp(covered / length if samples else 1.0)
+    farthest = max((min(haversine_mi(p, (f["lat"], f["lon"])) for f in ld) for p, _, _ in samples), default=0.0)
+
     ev.pregnancy_metrics = {
         "pregnancy": True,
-        "labor_delivery_passed": [f["name"] for f in ld_passed],
-        "labor_delivery_coverage_share": round(coverage, 2),
-        "longest_without_stop_minutes": round(longest_min),
+        "major_road_share_smooth": round(1 - rough, 2),
+        "potholes": [e.label for e in potholes],
+        "restroom_count": len(restroom_spots),
+        "restroom_gap_minutes": round(restroom_gap),
+        "food_water_count": len(food_spots),
+        "food_water_gap_minutes": round(food_gap),
+        "construction_zones": [e.label for e in dusty],
+        "worst_aqi": worst_aqi,
+        "baseline_aqi": baseline_aqi,
+        "walk_minutes": walk,
+        "benches": benches,
         "farthest_from_labor_delivery_mi": round(farthest, 1),
+        "amenities_on_route": [a["name"] for a in amen],
     }
+
+
+def _aqi_band(aqi: int) -> str:
+    return "good" if aqi <= 50 else "moderate" if aqi <= 100 else "unhealthy for sensitive groups, including pregnancy" if aqi <= 150 else "unhealthy"
 
 
 def pregnancy_check(ev: RouteEval) -> list[dict]:
     """Plain-language checks of what matters when traveling while pregnant, each met or not."""
     m = ev.metrics
-    far = m["farthest_from_labor_delivery_mi"]
-    checks = [{"label": f"Never more than {far:.0f} mi from a labor & delivery hospital", "ok": far <= 15}]
-    if ev.duration_minutes < 45:
-        checks.append({"label": f"Short trip ({round(ev.duration_minutes)} min), no stop needed", "ok": True})
+    long_trip = ev.duration_minutes >= 45
+    checks = []
+    if m["potholes"]:
+        checks.append({"label": f"Bumpy: {m['potholes'][0]}", "ok": False})
     else:
-        gap = m["longest_without_stop_minutes"]
-        checks.append({"label": f"A place to stop at least every {max(gap, 15)} min", "ok": gap <= 60})
-    icy = [h for h in m["road_hazards"] if any(w in h.lower() for w in ("ice", "icy", "unplowed"))]
-    checks.append({"label": "No icy or unplowed stretches reported" if not icy else f"Reported: {icy[0].lower()}", "ok": not icy})
-    checks.append({"label": f"{_weather_risk(ev).capitalize()} winter-weather exposure", "ok": _weather_risk(ev) == "low"})
+        checks.append({"label": f"Smooth ride: {round(m['major_road_share_smooth'] * 100)}% smooth pavement, no potholes reported", "ok": m["major_road_share_smooth"] >= 0.7})
+    if long_trip:
+        checks.append({"label": f"Public restroom at least every {max(m['restroom_gap_minutes'], 10)} min", "ok": m["restroom_gap_minutes"] <= 45})
+        checks.append({"label": f"Food & water at least every {max(m['food_water_gap_minutes'], 10)} min", "ok": m["food_water_gap_minutes"] <= 60})
+    else:
+        n = m["restroom_count"]
+        checks.append({"label": f"{n} public restroom{'s' if n != 1 else ''} along the way" if n else "No public restroom along the way", "ok": n > 0})
+        n = m["food_water_count"]
+        checks.append({"label": f"{n} place{'s' if n != 1 else ''} to eat or get water" if n else "Nowhere to eat or get water on the way", "ok": n > 0})
+    if m["construction_zones"]:
+        checks.append({"label": f"Construction dust near {m['construction_zones'][0]}: air quality ~{m['worst_aqi']} ({_aqi_band(m['worst_aqi'])})", "ok": False})
+    else:
+        checks.append({"label": f"No construction zones: air quality {m['baseline_aqi']} ({_aqi_band(m['baseline_aqi'])})", "ok": m["baseline_aqi"] < SENSITIVE_AQI})
     if ev.candidate.transit:
-        t = ev.candidate.transit
-        checks.append({"label": f"{'Step-free' if t.get('step_free') else 'Not step-free'}, {t.get('walk_minutes', 0)} min walk",
-                       "ok": bool(t.get("step_free")) and t.get("walk_minutes", 0) <= 8})
+        walk, b = m["walk_minutes"], m["benches"]
+        checks.append({"label": f"{b} bench{'es' if b != 1 else ''} to rest on during the {walk}-min walk", "ok": walk <= 3 or b >= max(1, round(walk / 3))})
+    far = m["farthest_from_labor_delivery_mi"]
+    checks.append({"label": f"Never more than {far:.0f} mi from labor & delivery care", "ok": far <= 15})
     return checks
 
 
@@ -321,17 +377,17 @@ def _describe(ev: RouteEval) -> tuple[list[str], list[str]]:
         conds.append("Step-free" if t.get("step_free") else "Not step-free")
         conds.append(f"{t.get('walk_minutes', 0)} min walk")
     if m.get("pregnancy"):
-        n = len(m["labor_delivery_passed"])
+        n = m["restroom_count"]
         if n:
-            conds.append(f"{n} labor & delivery {'hospital' if n == 1 else 'hospitals'} nearby")
-        elif m["labor_delivery_coverage_share"] < 0.5:
-            cautions.append("Long stretches far from a hospital with labor & delivery care.")
-        if m["longest_without_stop_minutes"] > 60 and ev.duration_minutes >= 45:
-            conds.append(f"No rest stop for ~{m['longest_without_stop_minutes']} min")
+            conds.append(f"{n} restroom{'s' if n != 1 else ''} on the way")
+        if m["construction_zones"]:
+            conds.append(f"Construction dust (AQI ~{m['worst_aqi']})")
+            if m["worst_aqi"] >= SENSITIVE_AQI:
+                cautions.append("Construction dust can push air quality into the range that's unhealthy for sensitive groups, including pregnancy.")
+        if ev.duration_minutes >= 45 and m["restroom_gap_minutes"] > 45:
+            cautions.append(f"No public restroom for about {m['restroom_gap_minutes']} min: plan a stop before you go.")
         if ev.duration_minutes >= 90 and not ev.candidate.transit:
-            cautions.append("Plan a stop to walk and stretch at least every 1–2 hours.")
-        if m["road_hazards"] and ev.candidate.transit:
-            cautions.append("Icy or unplowed walkways reported: allow extra time and take care walking.")
+            cautions.append("Plan a stop to walk, stretch, drink water and eat at least every 1–2 hours.")
     if _weather_risk(ev) == "high":
         cautions.append("High winter-weather exposure on this route.")
     if ev.factors["mobility_fit"] < 0.5:
@@ -359,10 +415,16 @@ def _reason_phrases(best: RouteEval, other: RouteEval) -> list[str]:
     if b["healthcare_proximity"] - o["healthcare_proximity"] >= 0.08:
         n = len(bm["healthcare_facilities_passed"])
         phrases.append(f"remains closer to emergency medical resources (passes {n} healthcare {'facility' if n == 1 else 'facilities'})")
+    if b.get("ride_smoothness", 0) - o.get("ride_smoothness", 0) >= 0.1:
+        phrases.append("gives a smoother ride with fewer potholes")
+    if b.get("air_quality", 0) - o.get("air_quality", 0) >= 0.1:
+        phrases.append("avoids construction dust")
+    if b.get("restrooms", 0) - o.get("restrooms", 0) >= 0.15:
+        phrases.append("has more public restrooms along the way")
+    if b.get("food_water", 0) - o.get("food_water", 0) >= 0.15:
+        phrases.append("has more places to eat and get water")
     if b.get("obstetric_access", 0) - o.get("obstetric_access", 0) >= 0.1:
         phrases.append("stays closer to hospitals with labor & delivery care")
-    if b.get("rest_stops", 0) - o.get("rest_stops", 0) >= 0.15:
-        phrases.append("has more places to stop and rest")
     if b["mobility_fit"] - o["mobility_fit"] >= 0.2:
         phrases.append("better fits the patient's mobility and transportation needs")
     return phrases

@@ -8,6 +8,7 @@ demo scenario, a live weather API, a DOT/511 road feed) just has to produce one.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -33,6 +34,7 @@ class RoadEvent:
     label: str
     road: str | None = None  # substring of a segment road name; None = any road in the radius
     delay_minutes: float = 0.0
+    aqi: Optional[int] = None  # estimated local air quality index near the event (e.g. construction dust)
 
 
 @dataclass
@@ -43,6 +45,7 @@ class ConditionsSnapshot:
     source: dict[str, str] = field(default_factory=lambda: {"weather": "none", "roads": "none"})
     scenario: str = "clear"
     summary: str = "No weather or road events reported."
+    baseline_aqi: int = 40  # area air quality index away from local sources
 
     def to_dict(self) -> dict:
         return {
@@ -52,6 +55,7 @@ class ConditionsSnapshot:
             "source": self.source,
             "weather": [vars(z) for z in self.weather],
             "road_events": [vars(e) for e in self.road_events],
+            "baseline_aqi": self.baseline_aqi,
         }
 
 
@@ -93,6 +97,7 @@ def scenario_conditions(name: str, as_of: str) -> ConditionsSnapshot:
         source={"weather": f"demo:{name}", "roads": f"demo:{name}"},
         scenario=name,
         summary=s["summary"],
+        baseline_aqi=int(s.get("baseline_aqi", 40)),
     )
 
 
