@@ -46,7 +46,6 @@ export function MyChartCard({ connection, compact = false }: { connection: MyCha
             <h2 className="card-title" id="mychart-h"><span className="mychart-mark" aria-hidden="true">M</span> MyChart connected</h2>
             <div className="card-sub">
               Read-only · synced {connection.last_synced_at ? formatDate(connection.last_synced_at, { year: true }) : 'today'}
-              {connection.simulated && ' · simulated connection'}
             </div>
           </div>
           <span className="badge badge-good"><Icon name="check" size={12} /> {total} records imported</span>
@@ -75,7 +74,7 @@ export function MyChartCard({ connection, compact = false }: { connection: MyCha
       <header className="card-header">
         <div>
           <h2 className="card-title" id="mychart-h"><span className="mychart-mark" aria-hidden="true">M</span> Connect your MyChart</h2>
-          <div className="card-sub">Bring your records from every health system into one place · simulated connection</div>
+          <div className="card-sub">Bring your records from every health system into one place</div>
         </div>
       </header>
       <div className="card-body stack-sm">
@@ -100,7 +99,7 @@ export function MyChartCard({ connection, compact = false }: { connection: MyCha
               ))}
             </ul>
             <p className="list-meta">
-              HERA can't change anything in MyChart. In this demo no real account is used: signing in is simulated and the records are synthetic.
+              Read-only: HERA can't change anything in MyChart, and you can disconnect at any time.
             </p>
             {error && <p className="error-text">{error}</p>}
             <div className="row">

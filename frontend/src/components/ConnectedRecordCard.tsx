@@ -48,7 +48,7 @@ export function ConnectedSources({ sources }: { sources: RecordSource[] }) {
       <header className="card-header">
         <div>
           <h2 className="card-title" id="sources-h"><Icon name="link" size={16} /> Record sources</h2>
-          <div className="card-sub">Authorized by the patient · simulated connection</div>
+          <div className="card-sub">Authorized by the patient</div>
         </div>
       </header>
       <ul className="list">
@@ -62,7 +62,6 @@ export function ConnectedSources({ sources }: { sources: RecordSource[] }) {
               <div className="list-title">{s.name}</div>
               <div className="list-meta">
                 {SOURCE_LABEL[s.system_type]} · synced {formatSyncTime(s.last_synced_at)}
-                {s.simulated && ' · simulated'}
               </div>
             </div>
           </li>

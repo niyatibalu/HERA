@@ -3,7 +3,7 @@ import { CareTabs } from '../components/Layout'
 import { Link, useLocation } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Loading, PageHeader } from '../components/common'
 import { AccessMapFrame } from '../components/AccessMapFrame'
 import { CareJourney } from '../components/CareJourney'
 import { Icon } from '../components/Icon'
@@ -38,7 +38,6 @@ export function JourneyPage() {
         eyebrow="Care journey"
         title="Every referral, tracked to the finish"
         lede="Every step from referral to follow-up, in one place."
-        actions={<DataSourceNote source={journeys.source} />}
       />
 
       <div className="stack">

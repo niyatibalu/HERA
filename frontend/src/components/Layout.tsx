@@ -66,7 +66,6 @@ export function Layout({ patient, mychart, attentionCount = 0 }: { patient?: Pat
             </div>
           )}
           <div className="sidebar-foot-row">
-            <p className="demo-flag">Demo · synthetic data</p>
             <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { await signOut(); navigate('/login', { replace: true }) }}>Sign out</button>
           </div>
         </div>

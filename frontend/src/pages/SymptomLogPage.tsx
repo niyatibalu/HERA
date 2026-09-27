@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { Card, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Card, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
 import { COMMON_SYMPTOMS, groupByVisit, TIMING_LABEL, visitOptions } from '../lib/symptoms'
 import { formatDate } from '../lib/format'
@@ -26,7 +26,6 @@ export function SymptomLogPage() {
         eyebrow="Health timeline"
         title="Your visits and notes"
         lede="Note how you feel before and after each visit. Your notes, kept for you."
-        actions={<DataSourceNote source={log.source} />}
       />
       <div className="grid grid-main">
         <ol className="timeline" aria-label="Visits and notes">

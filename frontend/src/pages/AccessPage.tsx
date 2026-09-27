@@ -3,7 +3,7 @@ import { CareTabs } from '../components/Layout'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { Alert, Card, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Alert, Card, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
 import { PreferencesPanel } from '../components/PreferencesPanel'
 import { ProviderMatchCard } from '../components/ProviderMatchCard'
@@ -90,7 +90,6 @@ export function AccessPage() {
         eyebrow="Care access"
         title="Find care you can actually reach"
         lede="Providers ranked by what matters to you, and ones you can actually reach."
-        actions={<DataSourceNote source={matches.source} />}
       />
 
       <PreferencesPanel planOnFile={plan} home={r.patient.home_location.address} />

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon, type IconName } from './Icon'
-import type { DataSource } from '../api/client'
 
 export function PageHeader({ eyebrow, title, lede, actions }: { eyebrow?: string; title: string; lede?: ReactNode; actions?: ReactNode }) {
   return (
@@ -69,14 +68,4 @@ export function Alert({ tone, title, children, action }: { tone: AlertTone; titl
 
 export function Loading({ label = 'Loading…' }: { label?: string }) {
   return <div className="loading" role="status">{label}</div>
-}
-
-export function DataSourceNote({ source }: { source?: DataSource }) {
-  if (!source) return null
-  return (
-    <span className="demo-note">
-      <Icon name={source === 'live' ? 'link' : 'info'} size={13} />
-      {source === 'live' ? 'Live from HERA backend' : 'Showing synthetic demo data'}
-    </span>
-  )
 }
