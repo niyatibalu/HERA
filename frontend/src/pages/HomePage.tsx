@@ -8,6 +8,7 @@ import { providerLookup } from '../lib/record'
 import { journeyAppointmentDate, journeyProviderId } from '../lib/providers'
 import { daysBetween, formatDate, humanize } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
+import { formatTime, modalityLabel } from '../lib/scheduling'
 import type { CareState, SymptomLogEntry } from '../types'
 
 const SHORT_STEP: Partial<Record<CareState, string>> = {
@@ -116,6 +117,7 @@ export function HomePage() {
           <section className="panel" aria-labelledby="upcoming-h">
             <h2 id="upcoming-h" className="panel-label">Upcoming care</h2>
             {upcoming ? (
+              <>
               <div className="upcoming">
                 <div className="date-tile num" aria-hidden="true">
                   <span>{formatDate(upcoming.date).split(' ')[0]}</span>
@@ -123,9 +125,13 @@ export function HomePage() {
                 </div>
                 <div>
                   <div className="panel-title">{provider(journeyProviderId(upcoming.j, r.providers))?.name ?? 'Specialist visit'}</div>
-                  <p className="panel-text">{humanize(upcoming.j.need)}</p>
+                  <p className="panel-text">
+                    {upcoming.j.appointment_time ? `${formatTime(upcoming.j.appointment_time)} · ` : ''}{modalityLabel(upcoming.j.appointment_modality)}
+                  </p>
                 </div>
               </div>
+              <Link to="/appointments" className="text-link">View appointment <Icon name="arrow" size={16} /></Link>
+              </>
             ) : (
               <>
                 <div className="panel-title">No specialist appointment yet</div>

@@ -17,6 +17,7 @@
   --alt: #8a2f63;
   --hospital: #1f7a5a;
   --urgent: #3a8f9e;
+  --ld: #c2185b;
   --r-fastest: #e57a5b;
   --r-safer: #8a2f63;
   --r-transit: #2f5fd0;
@@ -144,3 +145,11 @@ body.inapp .app { grid-template-columns: 360px 1fr; }
   body.embed .app { grid-template-rows: 1fr; height: 100vh; }
   body.embed .map-wrap { height: 100vh; }
 }
+.dot-ld { background: var(--ld); }
+#pregnancy-tips { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); font-size: 13px; }
+#pregnancy-tips h3 { font-size: 13px; margin: 0 0 6px; }
+#pregnancy-tips ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+#pregnancy-tips .ld { margin-top: 8px; font-weight: 600; }
+.preg-check { list-style: none; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: 12.5px; display: grid; gap: 3px; }
+.preg-check .ok { color: var(--good); }
+.preg-check .no { color: var(--risk); }

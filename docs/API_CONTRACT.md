@@ -18,11 +18,11 @@ second spelling of any field (e.g. always `wait_days`, never `waitDays`,
 | `HealthEvent` | `event_id, patient_id, event_type, event_date, topic, description, specialty?, provider_id?, status?, severity?(1-5), value?, unit?, source, raw{}` | `event_type` ∈ `encounter, diagnosis, symptom, medication, lab, imaging, procedure, referral` |
 | `TrendFlag` | `flag_id, patient_id, pattern_type, topic, first_seen, last_seen, encounter_count, trend, evidence[], message, action, generated_at` | `action` is always `"clinician_review"`. Never a diagnosis. |
 | `Provider` | `provider_id, name, specialty, location, wait_days, telehealth_available, in_network_plans[], estimated_cost_usd?, accessibility_features[], languages[], expertise_tags[], gender?, rating?(0-5), review_count, review_highlights[], availability[], sliding_scale` | Ratings and reviews are synthetic. `availability` ⊂ `weekday_morning, weekday_afternoon, weekday_evening, weekend` |
-| `CarePreferences` | `patient_id, max_cost_usd?, needs_financial_assistance, insurance_plan?, max_distance_mi?, expertise[], min_rating?, availability[], telehealth, provider_gender, updated_at?` | `telehealth` ∈ `no_preference, prefer_telehealth, in_person_only`; `provider_gender` ∈ `no_preference, female, male, nonbinary`. An unset preference never penalizes a provider. |
+| `CarePreferences` | `patient_id, max_cost_usd?, needs_financial_assistance, insurance_plan?, max_distance_mi?, expertise[], min_rating?, availability[], telehealth, provider_gender, updated_at?` | `telehealth` ∈ `no_preference, prefer_telehealth, in_person_only`; `provider_gender` ∈ `no_preference, female, male, nonbinary`. `pregnant` (bool) favors clinicians tagged `pregnancy_care`. An unset preference never penalizes a provider. |
 | `SymptomLogEntry` | `entry_id, patient_id, logged_on, symptom, severity(0-10), timing, visit?, note, tags[]` | `timing` ∈ `before_visit, after_visit, general`. Patient's own notes: stored and shown, never analyzed. |
 | `MyChartConnection` | `patient_id, status, simulated, connected_at?, last_synced_at?, scopes[], organizations[{name, system_type}], imported{event_type: count}` | `status` ∈ `not_connected, connected`. Always `simulated: true`: no real MyChart/Epic system is contacted. |
 | `ProviderMatch` | `provider, score(0-100), distance_mi, match_reasons[], access_tradeoffs[]` | Returned sorted, highest score first |
-| `CareJourney` | `journey_id, patient_id, need, state, state_history[], provider_id?, appointment_date?, stalled, stalled_reason?` | `state` ∈ see below |
+| `CareJourney` | `journey_id, patient_id, need, state, state_history[], provider_id?, appointment_date?, appointment_time?(HH:MM), appointment_modality?(in_person\|telehealth), stalled, stalled_reason?` | `state` ∈ see below |
 | `ResearchConsent` | `patient_id, consent, consent_timestamp?, scope, revoked, revoked_timestamp?` | `is_active` = `consent && !revoked` |
 | `Study` | `study_id, title, criteria{...}, description` | |
 | `StudyMatch` | `study_id, candidate_id, eligibility_status, criteria_satisfied[], criteria_unknown[], reason` | `candidate_id` is a one-way pseudonym. Never `patient_id`, name, or address. `eligibility_status` is always `"potentially_eligible"`. |
@@ -57,6 +57,7 @@ followup_completed`, plus `stalled` (reachable from any state).
 | GET | `/patients/{id}/mychart` | `MyChartConnection` |
 | POST | `/patients/{id}/mychart/connect` `{scopes?}` | `MyChartConnection` (simulated import from the synthetic record), 400 on unknown scope |
 | POST | `/patients/{id}/mychart/disconnect` | `MyChartConnection` with `status: not_connected` |
+| POST | `/patients/{id}/care-journeys/{journey_id}/cancel-appointment` `{reason?}` | `CareJourney` back at `records_ready` (same provider, appointment cleared, note "Appointment cancelled: …"); 400 if nothing is booked |
 | POST | `/auth/login` `{email, password}` | `{token, email, patient_id, name}`, 401 `{detail: "Email or password is incorrect"}` |
 | GET | `/auth/me` (header `Authorization: Bearer <token>`) | `{email, patient_id, name}`, 401 if missing/expired |
 | POST | `/auth/logout` (bearer token) | 204 |

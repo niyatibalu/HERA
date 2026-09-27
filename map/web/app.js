@@ -81,9 +81,10 @@
       L.tooltip({ permanent: true, direction: 'center', className: 'town-label' }).setLatLng([t.lat, t.lon]).setContent(esc(t.name)).addTo(layers.towns)
     }
     for (const f of world.facilities) {
-      const color = f.kind === 'hospital_er' ? css('--hospital') : css('--urgent')
-      L.marker([f.lat, f.lon], { icon: dotIcon(color, 10), title: f.name })
-        .bindTooltip(`<b>${esc(f.name)}</b><br>${esc(humanize(f.kind === 'hospital_er' ? 'hospital / emergency' : f.kind))}`)
+      const ld = (f.services || []).includes('labor_delivery')
+      const color = ld ? css('--ld') : f.kind === 'hospital_er' ? css('--hospital') : css('--urgent')
+      L.marker([f.lat, f.lon], { icon: dotIcon(color, ld ? 12 : 10), title: f.name })
+        .bindTooltip(`<b>${esc(f.name)}</b><br>${esc(humanize(f.kind === 'hospital_er' ? 'hospital / emergency' : f.kind))}${ld ? '<br>Labor &amp; delivery care' : ''}`)
         .addTo(layers.facilities)
     }
     for (const pr of world.providers) {
@@ -162,6 +163,7 @@
       if (JOURNEY_ID) q.set('journey_id', JOURNEY_ID)
       for (const k of ['weights', 'date']) if (params.get(k)) q.set(k, params.get(k))
       q.set('scenario', $('scenario').value)
+      if ($('pregnant').checked) q.set('pregnant', '1')
       data = await getJSON(`/routes?${q}`)
     } catch (e) {
       if (req === routeReq) $('route-list').innerHTML = `<p class="error">Could not load routes: ${esc(e.message || e)}</p>`
@@ -176,6 +178,7 @@
     $('disclaimer').textContent = data.disclaimer
     renderRoutes()
     renderConditions(data.conditions)
+    renderPregnancy(data.pregnancy)
   }
 
   function renderRoutes() {
@@ -211,6 +214,7 @@
           <div class="conds">${o.conditions.map((c) => `<span class="badge ${RISKY.test(c) ? 'risk' : /major roads|passes|step-free|no travel/i.test(c) ? 'ok' : ''}">${esc(c)}</span>`).join('')}</div>
           ${on && o.reasons.length ? `<ul class="reasons">${o.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
           ${on && o.cautions.length ? `<ul class="reasons">${o.cautions.map((r) => `<li class="error">${esc(r)}</li>`).join('')}</ul>` : ''}
+          ${on && o.pregnancy_check ? `<ul class="preg-check" aria-label="Pregnancy check">${o.pregnancy_check.map((c) => `<li class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✕'} ${esc(c.label)}</li>`).join('')}</ul>` : ''}
           ${on && factors ? `<div class="factors" aria-label="Factor scores">${factors}</div>` : ''}
         </button>`
       })
@@ -231,6 +235,15 @@
     if (!m || m.source !== 'hera-app' || typeof m.route_id !== 'string') return
     if (m.type === 'selectRoute') selectRoute(m.route_id, true)
   })
+
+  function renderPregnancy(p) {
+    const box = $('pregnancy-tips')
+    if (!p) { box.hidden = true; return }
+    box.hidden = false
+    const ld = p.labor_delivery_near_destination.map((f) => `${esc(f.name)} (${f.distance_mi} mi)`).join(', ')
+    box.innerHTML = `<h3>Traveling while pregnant</h3><ul>${p.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` +
+      (ld ? `<p class="ld">Labor &amp; delivery near your destination: ${ld}</p>` : '') + `<p>${esc(p.note)}</p>`
+  }
 
   const condLayer = L.layerGroup().addTo(map)
   function renderConditions(cond) {
@@ -263,6 +276,14 @@
     renderProviders(state.world)
     drawWorld(state.world)
     if (params.get('scenario')) $('scenario').value = params.get('scenario')
+    if (params.get('pregnant') === '1') $('pregnant').checked = true
+    $('pregnant').addEventListener('change', () => {
+      const url = new URL(location.href)
+      if ($('pregnant').checked) url.searchParams.set('pregnant', '1')
+      else url.searchParams.delete('pregnant')
+      history.replaceState(null, '', url)
+      if (state.selected) loadRoutes(state.selected)
+    })
     $('scenario').addEventListener('change', () => {
       const url = new URL(location.href)
       url.searchParams.set('scenario', $('scenario').value)

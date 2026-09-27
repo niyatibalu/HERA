@@ -25,7 +25,7 @@ export function SymptomLogPage() {
       <PageHeader
         eyebrow="Health timeline"
         title="Your visits and notes"
-        lede="Log how you feel before a visit so nothing gets forgotten, and after it to track what changed. HERA keeps your notes; it doesn't interpret them."
+        lede="Note how you feel before and after each visit. Your notes, kept for you."
         actions={<DataSourceNote source={log.source} />}
       />
       <div className="grid grid-main">

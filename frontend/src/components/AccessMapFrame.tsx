@@ -18,6 +18,7 @@ export function AccessMapFrame({
   height = 320,
   title = 'Map of routes to care',
   fallback = null,
+  pregnant = false,
 }: {
   patientId: string
   providerId?: string
@@ -28,6 +29,7 @@ export function AccessMapFrame({
   title?: string
   /** Shown instead of the map when the service isn't configured or doesn't answer. */
   fallback?: ReactNode
+  pregnant?: boolean
 }) {
   const [status, setStatus] = useState<'checking' | 'up' | 'down'>(MAP_URL ? 'checking' : 'down')
   const frame = useRef<HTMLIFrameElement>(null)
@@ -54,8 +56,9 @@ export function AccessMapFrame({
     q.set(mode === 'compact' ? 'embed' : 'inapp', '1')
     if (providerId) q.set('provider_id', providerId)
     if (initialRoute) q.set('route', initialRoute)
+    if (pregnant) q.set('pregnant', '1')
     return `${MAP_URL}/map/?${q}`
-  }, [patientId, providerId, mode, initialRoute])
+  }, [patientId, providerId, mode, initialRoute, pregnant])
 
   useEffect(() => {
     if (routeId) frame.current?.contentWindow?.postMessage({ source: 'hera-app', type: 'selectRoute', route_id: routeId }, '*')

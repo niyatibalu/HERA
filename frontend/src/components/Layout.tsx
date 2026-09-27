@@ -6,7 +6,7 @@ import { ageOn } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
 
 /** Care has three views (find care, journey, map) that share one nav item. */
-const CARE_PATHS = ['/care', '/access', '/journey', '/map']
+const CARE_PATHS = ['/care', '/access', '/appointments', '/journey', '/map']
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean; match?: string[] }[] = [
   { to: '/', label: 'Home', icon: 'home', end: true },
@@ -82,6 +82,7 @@ export function Layout({ patient, mychart, attentionCount = 0 }: { patient?: Pat
 export function CareTabs() {
   const tabs = [
     { to: '/access', label: 'Find care' },
+    { to: '/appointments', label: 'Appointments' },
     { to: '/journey', label: 'Journey' },
     { to: '/map', label: 'Map' },
   ]

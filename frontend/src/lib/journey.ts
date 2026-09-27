@@ -23,7 +23,7 @@ export const DISPLAY_STEPS: { state: CareState; label: string }[] = [
   { state: 'followup_completed', label: 'Follow-up complete' },
 ]
 
-const ORDER: CareState[] = [
+export const ORDER: CareState[] = [
   'need_identified',
   'provider_matched',
   'records_ready',

@@ -63,5 +63,7 @@ class CareJourney:
     state_history: list[StateTransition] = field(default_factory=list)
     provider_id: Optional[str] = None
     appointment_date: Optional[date] = None
+    appointment_time: Optional[str] = None  # "HH:MM", 24h, clinic local time
+    appointment_modality: Optional[str] = None  # in_person | telehealth
     stalled: bool = False
     stalled_reason: Optional[str] = None

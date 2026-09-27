@@ -29,6 +29,15 @@ export function RouteOptions({ options, selected, onSelect }: { options: RouteOp
             </div>
             <div className="route-time num">{o.duration_minutes != null ? `${o.duration_minutes} min` : 'No travel'}</div>
             <div className="route-summary">{o.summary}</div>
+            {o.pregnancy_check && (
+              <ul className="preg-check" aria-label="Pregnancy check">
+                {o.pregnancy_check.map((c) => (
+                  <li key={c.label} className={c.ok ? 'is-ok' : 'is-no'}>
+                    <Icon name={c.ok ? 'check' : 'x'} size={14} /> {c.label}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="route-conds">
               {o.conditions.map((c) => (
                 <span key={c} className={`badge ${/snow|ice|unplowed|no services/i.test(c) ? 'badge-review' : ''}`}>

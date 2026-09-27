@@ -1,9 +1,9 @@
 from datetime import date
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.data.providers import PROVIDERS
 from app.data.store import store
@@ -27,6 +27,8 @@ class AdvanceRequest(BaseModel):
     # keeps working exactly as before.
     provider_id: Optional[str] = None
     appointment_date: Optional[date] = None
+    appointment_time: Optional[str] = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    appointment_modality: Optional[Literal["in_person", "telehealth"]] = None
 
 
 def _serialize_journey(journey) -> dict:
@@ -57,7 +59,24 @@ def advance_journey(patient_id: str, journey_id: str, body: AdvanceRequest):
         journey = store.advance_journey(
             journey_id, body.state, body.note,
             provider_id=body.provider_id, appointment_date=body.appointment_date,
+            appointment_time=body.appointment_time, appointment_modality=body.appointment_modality,
         )
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return _serialize_journey(journey)
+
+
+class CancelRequest(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=200)
+
+
+@router.post("/{patient_id}/care-journeys/{journey_id}/cancel-appointment")
+def cancel_appointment(patient_id: str, journey_id: str, body: Optional[CancelRequest] = None):
+    journey = store.journeys.get(journey_id)
+    if journey is None or journey.patient_id != patient_id:
+        raise HTTPException(status_code=404, detail="care journey not found")
+    try:
+        journey = store.cancel_appointment(journey_id, body.reason if body else None)
     except InvalidTransitionError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return _serialize_journey(journey)

@@ -21,8 +21,9 @@ import { mockJourneys, mockProviderMatches, mockRouteOptions } from '../mocks/ca
 import { mockStudyMatches } from '../mocks/research'
 import { DEMO_LOGIN, mockMyChartConnected, mockMyChartNotConnected, mockPreferences, mockSymptomLog } from '../mocks/patient'
 import { currentSession, setSession, type Session } from '../lib/auth'
-import { addDays } from '../lib/format'
+import { formatTime, modalityLabel, type Booking, type Modality } from '../lib/scheduling'
 import { REMATCH_NOTE_PREFIX, requiredSpecialty } from '../lib/providers'
+import { ORDER, reachedState } from '../lib/journey'
 
 export type DataSource = 'live' | 'demo'
 
@@ -108,6 +109,8 @@ interface AdvanceBody {
   note: string
   provider_id?: string
   appointment_date?: string
+  appointment_time?: string
+  appointment_modality?: Modality
 }
 
 /**
@@ -115,11 +118,17 @@ interface AdvanceBody {
  * provider_id and appointment_date travel as fields (docs/API_CONTRACT.md, advance); the notes
  * are human-readable history.
  */
-function selectionSteps(providerId: string, providerName: string, appointmentDate: string): AdvanceBody[] {
+function selectionSteps(providerId: string, providerName: string, b: Booking): AdvanceBody[] {
   return [
     { state: 'provider_matched', note: `${REMATCH_NOTE_PREFIX} ${providerName}`, provider_id: providerId },
     { state: 'records_ready', note: 'Longitudinal record shared with new provider' },
-    { state: 'appointment_scheduled', note: `Appointment booked for ${appointmentDate}`, appointment_date: appointmentDate },
+    {
+      state: 'appointment_scheduled',
+      note: `Appointment booked for ${b.date} at ${formatTime(b.time)} (${modalityLabel(b.modality).toLowerCase()})`,
+      appointment_date: b.date,
+      appointment_time: b.time,
+      appointment_modality: b.modality,
+    },
   ]
 }
 
@@ -183,20 +192,46 @@ export const api = {
     ),
 
   /** Books a provider by advancing the journey, setting provider_id and appointment_date on the way. */
-  async selectProvider(patientId: string, journeyId: string, match: ProviderMatch) {
-    const appt = addDays(DEMO_TODAY, match.provider.wait_days)
-    const steps = selectionSteps(match.provider.provider_id, match.provider.name, appt)
+  /** Books a provider at a chosen time by advancing the journey: matched → records shared → scheduled. */
+  async selectProvider(patientId: string, journey: CareJourney, match: ProviderMatch, booking: Booking) {
+    // Skip steps the journey already passed (e.g. rebooking after a cancellation keeps records shared).
+    const reached = ORDER.indexOf(reachedState(journey))
+    const steps = selectionSteps(match.provider.provider_id, match.provider.name, booking)
+      .filter((st) => ORDER.indexOf(st.state) > reached || st.state === 'appointment_scheduled')
+      .map((st) => ({ ...st, provider_id: match.provider.provider_id }))
+    const journeyId = journey.journey_id
     const r = await withFallback<CareJourney>(
       API_BASE,
       async (base) => {
         let j: CareJourney | undefined
-        for (const s of steps) j = await http<CareJourney>(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(s))
+        for (const st of steps) j = await http<CareJourney>(base, `/patients/${patientId}/care-journeys/${journeyId}/advance`, post(st))
         return j!
       },
       () => {
         const j = demoJourney(journeyId)
-        for (const s of steps) demoAdvance(journeyId, s.state, s.note)
-        Object.assign(j, { provider_id: match.provider.provider_id, appointment_date: appt })
+        for (const st of steps) demoAdvance(journeyId, st.state, st.note)
+        Object.assign(j, {
+          provider_id: match.provider.provider_id,
+          appointment_date: booking.date,
+          appointment_time: booking.time,
+          appointment_modality: booking.modality,
+        })
+        return clone(j)
+      },
+    )
+    notify()
+    return r
+  },
+
+  /** Cancels a booked appointment; the journey returns to "records shared" with the same provider. */
+  async cancelAppointment(patientId: string, journeyId: string, reason?: string) {
+    const r = await withFallback<CareJourney>(
+      API_BASE,
+      (base) => http(base, `/patients/${patientId}/care-journeys/${journeyId}/cancel-appointment`, post({ reason: reason || null })),
+      () => {
+        const j = demoJourney(journeyId)
+        Object.assign(j, { appointment_date: null, appointment_time: null, appointment_modality: null })
+        demoAdvance(journeyId, 'records_ready', `Appointment cancelled${reason ? `: ${reason}` : ''}`)
         return clone(j)
       },
     )
@@ -216,9 +251,10 @@ export const api = {
   },
 
   /** GET {MAP_URL}/routes (docs/MAP_API.md, feature/access-map). `providerId` is the destination. */
-  getRouteOptions: (patientId: string, journeyId: string, providerId?: string) => {
+  getRouteOptions: (patientId: string, journeyId: string, providerId?: string, pregnant = false) => {
     const q = new URLSearchParams({ patient_id: patientId, journey_id: journeyId })
     if (providerId) q.set('provider_id', providerId)
+    if (pregnant) q.set('pregnant', '1')
     return withFallback<RouteOptionsResponse>(MAP_BASE, (base) => http(base, `/routes?${q}`), () => mockRouteOptions)
   },
 

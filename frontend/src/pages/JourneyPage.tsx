@@ -13,7 +13,7 @@ import { providerLookup } from '../lib/record'
 import { journeyProviderId } from '../lib/providers'
 import { formatDate } from '../lib/format'
 import { DEMO_TODAY } from '../mocks/record'
-import type { CareJourney as CareJourneyData } from '../types'
+import type { CareJourney as CareJourneyData, PregnancyTravel } from '../types'
 
 export function JourneyPage() {
   const journeys = useApi(() => api.getJourneys(DEMO_PATIENT_ID), 'journeys')
@@ -37,7 +37,7 @@ export function JourneyPage() {
       <PageHeader
         eyebrow="Care journey"
         title="Every referral, tracked to the finish"
-        lede="HERA keeps following a care need after a referral is placed, through scheduling, travel, the visit and follow-up, and flags it when progress stops."
+        lede="Every step from referral to follow-up, in one place."
         actions={<DataSourceNote source={journeys.source} />}
       />
 
@@ -72,7 +72,9 @@ export function JourneyPage() {
 }
 
 function TravelPlanner({ journey, providerId }: { journey: CareJourneyData; providerId?: string }) {
-  const routes = useApi(() => api.getRouteOptions(DEMO_PATIENT_ID, journey.journey_id, providerId), `routes:${journey.journey_id}:${providerId}`)
+  const prefs = useApi(() => api.getPreferences(DEMO_PATIENT_ID), 'preferences')
+  const pregnant = !!prefs.data?.pregnant
+  const routes = useApi(() => api.getRouteOptions(DEMO_PATIENT_ID, journey.journey_id, providerId, pregnant), `routes:${journey.journey_id}:${providerId}:${pregnant}`)
   const [selected, setSelected] = useState<string>()
   const [saving, setSaving] = useState(false)
   const opts = routes.data?.options ?? []
@@ -95,14 +97,34 @@ function TravelPlanner({ journey, providerId }: { journey: CareJourneyData; prov
             {routes.source === 'demo' && ' · sample routes until the access map is connected'}
           </p>
         </div>
+        <label className="choice pregnancy-toggle">
+          <input type="checkbox" checked={pregnant} disabled={!prefs.data} onChange={(e) => prefs.data && api.savePreferences(DEMO_PATIENT_ID, { ...prefs.data, pregnant: e.target.checked })} />
+          Planning for pregnancy
+        </label>
         <button type="button" className="btn btn-primary btn-sm" disabled={!pick || saving} onClick={confirm}>
           {saving ? 'Saving…' : pick ? `Use ${pick.label.toLowerCase()}` : 'Choose an option'}
         </button>
       </div>
       {routes.source === 'live' && (
-        <AccessMapFrame patientId={DEMO_PATIENT_ID} providerId={routes.data?.provider_id ?? providerId} routeId={selected} onRouteSelect={setSelected} />
+        <AccessMapFrame key={String(pregnant)} patientId={DEMO_PATIENT_ID} providerId={routes.data?.provider_id ?? providerId} routeId={selected} onRouteSelect={setSelected} pregnant={pregnant} />
       )}
       {opts.length > 0 && <RouteOptions options={opts} selected={selected} onSelect={setSelected} />}
+      {routes.data?.pregnancy && <PregnancyTravelTips info={routes.data.pregnancy} />}
     </div>
+  )
+}
+
+function PregnancyTravelTips({ info }: { info: PregnancyTravel }) {
+  const ld = info.labor_delivery_near_destination[0]
+  return (
+    <details className="pregnancy-tips">
+      <summary>
+        <span className="badge badge-accent">Pregnancy</span>
+        Routes are planned for travel while pregnant
+        {ld && <span className="list-meta"> · Labor &amp; delivery: {ld.name}, {ld.distance_mi} mi from your appointment</span>}
+      </summary>
+      <ul>{info.tips.map((t) => <li key={t}>{t}</li>)}</ul>
+      <p className="list-meta">{info.note}</p>
+    </details>
   )
 }

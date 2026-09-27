@@ -21,6 +21,7 @@
             <option value="clear">Clear (demo)</option>
           </select>
         </label>
+        <label class="cond-select"><input type="checkbox" id="pregnant" /> Traveling while pregnant</label>
       </header>
 
       <section class="block" aria-labelledby="prov-h">
@@ -39,6 +40,7 @@
         <h2 id="routes-h">Ways to reach care</h2>
         <p class="hint" id="routes-sub"></p>
         <div id="route-list" class="route-list" role="radiogroup" aria-label="Route options"></div>
+        <div id="pregnancy-tips" hidden></div>
         <p class="disclaimer" id="disclaimer"></p>
       </section>
     </aside>
@@ -51,6 +53,7 @@
         <div><span class="dot dot-original"></span>Original referral</div>
         <div><span class="dot dot-alt"></span>Alternative provider</div>
         <div><span class="dot dot-hospital"></span>Hospital / ER</div>
+        <div><span class="dot dot-ld"></span>Labor &amp; delivery</div>
         <div><span class="dot dot-urgent"></span>Urgent care / clinic</div>
         <div><span class="line" style="background:var(--r-safer)"></span>Lower-risk / alternative</div>
         <div><span class="line" style="background:var(--r-fastest)"></span>Fastest</div>

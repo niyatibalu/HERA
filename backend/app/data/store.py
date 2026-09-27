@@ -135,12 +135,18 @@ class DemoStore:
         note: Optional[str] = None,
         provider_id: Optional[str] = None,
         appointment_date: Optional[date] = None,
+        appointment_time: Optional[str] = None,
+        appointment_modality: Optional[str] = None,
     ) -> CareJourney:
         journey = self.journeys[journey_id]
         return self._lifecycle.advance(
             journey, new_state, self.today, note,
             provider_id=provider_id, appointment_date=appointment_date,
+            appointment_time=appointment_time, appointment_modality=appointment_modality,
         )
+
+    def cancel_appointment(self, journey_id: str, reason: Optional[str] = None) -> CareJourney:
+        return self._lifecycle.cancel_appointment(self.journeys[journey_id], self.today, reason)
 
     def check_stalled(self, journey: CareJourney) -> Optional[str]:
         return self._lifecycle.check_stalled(journey)

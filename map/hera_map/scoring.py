@@ -23,7 +23,9 @@ from .sources import WORLD, load_json
 FACTORS = [
     "travel_time", "weather", "road_condition", "construction", "road_type",
     "isolation", "healthcare_proximity", "accessibility", "mobility_fit", "transit_service",
+    "obstetric_access", "rest_stops",  # pregnancy only
 ]
+PREGNANCY_FACTORS = {"obstetric_access", "rest_stops"}
 
 # How exposed each road class is to winter weather (major roads are treated and plowed first).
 WEATHER_EXPOSURE = {"interstate": 0.45, "us_highway": 0.55, "state_highway": 0.75, "arterial": 0.7, "local": 1.0, "rural": 1.0}
@@ -59,9 +61,16 @@ def parse_weight_overrides(spec: str | None) -> dict[str, float]:
     return out
 
 
-def weights_for_patient(base: dict[str, float], patient: dict) -> dict[str, float]:
-    """Mobility/accessibility needs make those factors matter more for this patient."""
+def weights_for_patient(base: dict[str, float], patient: dict, pregnant: bool = False) -> dict[str, float]:
+    """Mobility/accessibility needs, and pregnancy, change which factors matter most for this patient."""
     w = dict(base)
+    if pregnant:
+        # Fall and delay risks matter more than minutes saved; walking and steps matter more on transit.
+        for k, m in {"road_condition": 1.5, "weather": 1.3, "isolation": 1.5, "accessibility": 1.3, "mobility_fit": 1.3, "travel_time": 0.8}.items():
+            w[k] = w.get(k, 0) * m
+    else:
+        for k in PREGNANCY_FACTORS:
+            w.pop(k, None)
     needs = set(patient.get("mobility_constraints", [])) | set(patient.get("accessibility_needs", []))
     if needs & (WHEELCHAIR | LIMITED_WALKING):
         w["accessibility"] = w.get("accessibility", 0) * 2
@@ -82,6 +91,7 @@ class RouteEval:
     cautions: list[str] = field(default_factory=list)
     closed: bool = False
     score: float = 0.0
+    pregnancy_metrics: dict = field(default_factory=dict)
 
 
 def _clamp(x: float) -> float:
@@ -102,7 +112,7 @@ def _event_hits(ev, point, seg) -> bool:
     return ev.road is None or ev.road.lower() in seg.road.lower()
 
 
-def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsSnapshot) -> RouteEval:
+def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsSnapshot, pregnant: bool = False) -> RouteEval:
     samples = c.samples(0.5)
     length = c.distance_mi or 1e-9
     needs = set(patient.get("mobility_constraints", [])) | set(patient.get("accessibility_needs", []))
@@ -190,6 +200,8 @@ def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsS
         "accessibility": _clamp(access),
         "mobility_fit": _clamp(mobility),
     }
+    if pregnant:
+        _pregnancy_factors(ev, c, samples, length, is_transit)
     if is_transit:
         t = c.transit
         ev.factors["transit_service"] = _clamp(1 - 0.15 * t.get("transfers", 0) - min(0.4, t.get("headway_minutes", 0) / 150) + (0.1 if t.get("sheltered_stops") else 0))
@@ -211,8 +223,70 @@ def evaluate(c: RouteCandidate, patient: dict, provider: dict, cond: ConditionsS
     }
     if is_transit:
         ev.metrics["transit"] = dict(c.transit)
+    ev.metrics.update(ev.pregnancy_metrics)
     ev.conditions, ev.cautions = _describe(ev)
     return ev
+
+
+def _pregnancy_factors(ev: RouteEval, c: RouteCandidate, samples, length: float, is_transit: bool) -> None:
+    """Access to obstetric care along the way, and how often she can stop to walk and use a restroom."""
+    ld = [f for f in WORLD.facilities if "labor_delivery" in f.get("services", [])]
+    covered = sum(per for p, _, per in samples if any(haversine_mi(p, (f["lat"], f["lon"])) <= 15 for f in ld))
+    coverage = covered / length if samples else 1.0
+    pts = [c.waypoints[0], *[p for p, _, _ in samples]]
+    ld_passed = [f for f in ld if point_polyline_distance_mi((f["lat"], f["lon"]), pts) <= 3]
+    ev.factors["obstetric_access"] = _clamp(0.6 * coverage + 0.4 * min(1.0, len(ld_passed)))
+    farthest = max((min(haversine_mi(p, (f["lat"], f["lon"])) for f in ld) for p, _, _ in samples), default=0.0)
+
+    minutes_per_mile = ev.duration_minutes / (length or 1)
+    stops = [(t["lat"], t["lon"], 2.0) for t in WORLD.towns if t["population"] >= 2000]
+    stops += [(f["lat"], f["lon"], 1.0) for f in WORLD.facilities if "restrooms" in f.get("services", [])]
+    gap = longest = 0.0
+    for p, _, per in samples:
+        if any(haversine_mi(p, (lat, lon)) <= r for lat, lon, r in stops):
+            gap = 0.0
+        else:
+            gap += per
+            longest = max(longest, gap)
+    longest_min = longest * minutes_per_mile
+    if ev.duration_minutes < 45:
+        rest = 1.0
+    else:
+        rest = _clamp(1 - max(0.0, longest_min - 60) / 90)
+    ev.factors["rest_stops"] = rest
+    if is_transit:
+        t = c.transit or {}
+        if t.get("walk_minutes", 0) > 8:
+            ev.factors["mobility_fit"] = min(ev.factors["mobility_fit"], 0.5)
+        if not t.get("step_free"):
+            ev.factors["mobility_fit"] = min(ev.factors["mobility_fit"], 0.3)
+    ev.pregnancy_metrics = {
+        "pregnancy": True,
+        "labor_delivery_passed": [f["name"] for f in ld_passed],
+        "labor_delivery_coverage_share": round(coverage, 2),
+        "longest_without_stop_minutes": round(longest_min),
+        "farthest_from_labor_delivery_mi": round(farthest, 1),
+    }
+
+
+def pregnancy_check(ev: RouteEval) -> list[dict]:
+    """Plain-language checks of what matters when traveling while pregnant, each met or not."""
+    m = ev.metrics
+    far = m["farthest_from_labor_delivery_mi"]
+    checks = [{"label": f"Never more than {far:.0f} mi from a labor & delivery hospital", "ok": far <= 15}]
+    if ev.duration_minutes < 45:
+        checks.append({"label": f"Short trip ({round(ev.duration_minutes)} min), no stop needed", "ok": True})
+    else:
+        gap = m["longest_without_stop_minutes"]
+        checks.append({"label": f"A place to stop at least every {max(gap, 15)} min", "ok": gap <= 60})
+    icy = [h for h in m["road_hazards"] if any(w in h.lower() for w in ("ice", "icy", "unplowed"))]
+    checks.append({"label": "No icy or unplowed stretches reported" if not icy else f"Reported: {icy[0].lower()}", "ok": not icy})
+    checks.append({"label": f"{_weather_risk(ev).capitalize()} winter-weather exposure", "ok": _weather_risk(ev) == "low"})
+    if ev.candidate.transit:
+        t = ev.candidate.transit
+        checks.append({"label": f"{'Step-free' if t.get('step_free') else 'Not step-free'}, {t.get('walk_minutes', 0)} min walk",
+                       "ok": bool(t.get("step_free")) and t.get("walk_minutes", 0) <= 8})
+    return checks
 
 
 def _weather_risk(ev: RouteEval) -> str:
@@ -246,6 +320,18 @@ def _describe(ev: RouteEval) -> tuple[list[str], list[str]]:
         conds.append(f"{t['transfers']} transfer{'s' if t['transfers'] != 1 else ''}" if t.get("transfers") else "No transfers")
         conds.append("Step-free" if t.get("step_free") else "Not step-free")
         conds.append(f"{t.get('walk_minutes', 0)} min walk")
+    if m.get("pregnancy"):
+        n = len(m["labor_delivery_passed"])
+        if n:
+            conds.append(f"{n} labor & delivery {'hospital' if n == 1 else 'hospitals'} nearby")
+        elif m["labor_delivery_coverage_share"] < 0.5:
+            cautions.append("Long stretches far from a hospital with labor & delivery care.")
+        if m["longest_without_stop_minutes"] > 60 and ev.duration_minutes >= 45:
+            conds.append(f"No rest stop for ~{m['longest_without_stop_minutes']} min")
+        if ev.duration_minutes >= 90 and not ev.candidate.transit:
+            cautions.append("Plan a stop to walk and stretch at least every 1–2 hours.")
+        if m["road_hazards"] and ev.candidate.transit:
+            cautions.append("Icy or unplowed walkways reported: allow extra time and take care walking.")
     if _weather_risk(ev) == "high":
         cautions.append("High winter-weather exposure on this route.")
     if ev.factors["mobility_fit"] < 0.5:
@@ -273,6 +359,10 @@ def _reason_phrases(best: RouteEval, other: RouteEval) -> list[str]:
     if b["healthcare_proximity"] - o["healthcare_proximity"] >= 0.08:
         n = len(bm["healthcare_facilities_passed"])
         phrases.append(f"remains closer to emergency medical resources (passes {n} healthcare {'facility' if n == 1 else 'facilities'})")
+    if b.get("obstetric_access", 0) - o.get("obstetric_access", 0) >= 0.1:
+        phrases.append("stays closer to hospitals with labor & delivery care")
+    if b.get("rest_stops", 0) - o.get("rest_stops", 0) >= 0.15:
+        phrases.append("has more places to stop and rest")
     if b["mobility_fit"] - o["mobility_fit"] >= 0.2:
         phrases.append("better fits the patient's mobility and transportation needs")
     return phrases
@@ -289,9 +379,10 @@ def rank(
     cond: ConditionsSnapshot,
     weights: dict[str, float],
     appointment_date: date | None = None,
+    pregnant: bool = False,
 ) -> dict:
-    evals = [evaluate(c, patient, provider, cond) for c in candidates]
-    w = weights_for_patient(weights, patient)
+    evals = [evaluate(c, patient, provider, cond, pregnant) for c in candidates]
+    w = weights_for_patient(weights, patient, pregnant)
     if evals:
         fastest_min = min(e.duration_minutes for e in evals if not e.closed) if any(not e.closed for e in evals) else min(e.duration_minutes for e in evals)
         for e in evals:
@@ -309,7 +400,7 @@ def rank(
         is_best = e is best
         c = e.candidate
         if is_best:
-            label = "HERA recommended"
+            label = "Recommended for pregnancy" if pregnant else "HERA recommended"
         elif c.transit:
             label = "Public transit"
         elif e is fastest:
@@ -325,7 +416,7 @@ def rank(
             if e is fastest:
                 reasons.append("Fastest option, and it also scores best on the configured access and risk factors.")
             elif phrases:
-                reasons.append(f"Recommended because it {_join(phrases)}.")
+                reasons.append(f"Recommended{' for travel while pregnant' if pregnant else ''} because it {_join(phrases)}.")
             else:
                 reasons.append("Highest overall access score across the configured factors.")
             if ref is not None and ref is fastest and e is not fastest:
@@ -351,6 +442,7 @@ def rank(
             "metrics": e.metrics,
             "geometry": [[round(p[0], 5), round(p[1], 5)] for p in c.waypoints],
             "generated_geometry": c.generated,
+            "pregnancy_check": pregnancy_check(e) if pregnant else None,
         })
 
     if provider.get("telehealth_available"):

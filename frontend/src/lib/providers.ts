@@ -54,6 +54,10 @@ export function journeyProviderId(journey: CareJourney, providers: Provider[]) {
 /** The appointment date: appointment_date, or (for older journeys) the ISO date in the scheduling note. */
 export function journeyAppointmentDate(journey: CareJourney) {
   if (journey.appointment_date) return journey.appointment_date
+  // No stored date: only trust an older "booked for" note if the journey hasn't moved back
+  // before booking since (a cancelled appointment returns it to records_ready).
+  const last = [...journey.state_history].reverse().find((t) => t.state !== 'stalled')?.state
+  if (!last || ['need_identified', 'provider_matched', 'records_ready'].includes(last)) return undefined
   const note = [...journey.state_history].reverse().find((t) => t.state === 'appointment_scheduled')?.note ?? ''
   return note.match(/\d{4}-\d{2}-\d{2}/)?.[0]
 }

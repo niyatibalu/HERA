@@ -158,3 +158,21 @@ class PreferencesChangeWhoRanksFirstTest(unittest.TestCase):
         r = by_id(rank(None))
         self.assertGreater(r["prov-alt-best"].score, 0)
         self.assertIn("No confirmed es language support", r["prov-pfpt-madison"].access_tradeoffs)
+
+
+class PregnancyPreferenceTest(unittest.TestCase):
+    def test_pregnant_favors_experienced_clinicians(self):
+        r = by_id(rank(CarePreferences(patient_id="maya-001", pregnant=True)))
+        self.assertIn("Experienced caring for pregnant patients", r["prov-alt-best"].match_reasons)
+        self.assertIn("Not listed as experienced with pregnant patients", r["prov-endo-madison"].access_tradeoffs)
+        base = by_id(rank(CarePreferences(patient_id="maya-001")))
+        self.assertLess(r["prov-endo-madison"].score, base["prov-endo-madison"].score)
+        self.assertEqual(r["prov-alt-best"].score, base["prov-alt-best"].score)
+
+    def test_pregnant_roundtrips_through_api(self):
+        store.reset()
+        c = TestClient(app)
+        prefs = c.get("/patients/maya-001/preferences").json()
+        self.assertFalse(prefs["pregnant"])
+        body = {k: v for k, v in prefs.items() if k not in ("patient_id", "updated_at")} | {"pregnant": True}
+        self.assertTrue(c.put("/patients/maya-001/preferences", json=body).json()["pregnant"])
