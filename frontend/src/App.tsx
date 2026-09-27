@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from './api/client'
 import { useApi } from './api/useApi'
 import { Layout } from './components/Layout'
@@ -11,9 +12,29 @@ import { AccessPage } from './pages/AccessPage'
 import { JourneyPage } from './pages/JourneyPage'
 import { ResearchPage } from './pages/ResearchPage'
 import { MapPage } from './pages/MapPage'
+import { LoginPage } from './pages/LoginPage'
+import { currentSession, onSessionChange } from './lib/auth'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 export default function App() {
+  return (
+    <Routes>
+      <Route path="login" element={<LoginPage />} />
+      <Route path="*" element={<RequireAuth><SignedInApp /></RequireAuth>} />
+    </Routes>
+  )
+}
+
+/** Sends signed-out visitors to /login, then back to where they were going. */
+function RequireAuth({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const [session, setSession] = useState(currentSession)
+  useEffect(() => onSessionChange(() => setSession(currentSession())), [])
+  if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
+  return <>{children}</>
+}
+
+function SignedInApp() {
   const record = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
   const journeys = useApi(() => api.getJourneys(DEMO_PATIENT_ID), 'journeys')
   const mychart = useApi(() => api.getMyChart(DEMO_PATIENT_ID), 'mychart')

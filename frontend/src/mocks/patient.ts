@@ -57,3 +57,6 @@ export const mockMyChartConnected = (today: string): MyChartConnection => ({
   ],
   imported: { encounter: 7, symptom: 6, lab: 2, medication: 3, referral: 2 },
 })
+
+/** Synthetic demo sign-in. Mirrors backend/app/routes/auth.py; used when the backend can't be reached. */
+export const DEMO_LOGIN = { email: 'maya@example.com', password: 'HeraDemo2025!', patient_id: 'maya-001', name: 'Maya Restrepo' }

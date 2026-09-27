@@ -19,7 +19,8 @@ import type {
 import { DEMO_TODAY, mockRecord } from '../mocks/record'
 import { mockJourneys, mockProviderMatches, mockRouteOptions } from '../mocks/care'
 import { mockStudyMatches } from '../mocks/research'
-import { mockMyChartConnected, mockMyChartNotConnected, mockPreferences, mockSymptomLog } from '../mocks/patient'
+import { DEMO_LOGIN, mockMyChartConnected, mockMyChartNotConnected, mockPreferences, mockSymptomLog } from '../mocks/patient'
+import { currentSession, setSession, type Session } from '../lib/auth'
 import { addDays } from '../lib/format'
 import { REMATCH_NOTE_PREFIX, requiredSpecialty } from '../lib/providers'
 
@@ -120,6 +121,39 @@ function selectionSteps(providerId: string, providerName: string, appointmentDat
     { state: 'records_ready', note: 'Longitudinal record shared with new provider' },
     { state: 'appointment_scheduled', note: `Appointment booked for ${appointmentDate}`, appointment_date: appointmentDate },
   ]
+}
+
+export class InvalidCredentials extends Error {}
+
+/** Signs in against the backend; if the backend can't be reached, checks the synthetic demo account locally. */
+export async function signIn(email: string, password: string): Promise<Session> {
+  const e = email.trim().toLowerCase()
+  if (API_BASE) {
+    let res: Response | undefined
+    try {
+      res = await fetch(`${API_BASE}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: e, password }) })
+    } catch (err) {
+      console.warn('[HERA] backend unavailable for sign-in, using demo account check:', err)
+    }
+    if (res?.status === 401) throw new InvalidCredentials('Email or password is incorrect')
+    if (res?.ok) {
+      const s = (await res.json()) as Session
+      setSession(s)
+      return s
+    }
+  }
+  if (e !== DEMO_LOGIN.email || password !== DEMO_LOGIN.password) throw new InvalidCredentials('Email or password is incorrect')
+  const s: Session = { token: 'demo-offline', email: e, patient_id: DEMO_LOGIN.patient_id, name: DEMO_LOGIN.name }
+  setSession(s)
+  return s
+}
+
+export async function signOut() {
+  const s = currentSession()
+  setSession(null)
+  if (API_BASE && s && s.token !== 'demo-offline') {
+    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${s.token}` } }).catch(() => undefined)
+  }
 }
 
 export const api = {

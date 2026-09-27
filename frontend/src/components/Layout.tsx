@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { signOut } from '../api/client'
 import { Icon, type IconName } from './Icon'
 import type { MyChartConnection, Patient } from '../types'
 import { ageOn } from '../lib/format'
@@ -17,6 +18,7 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean; match?: s
 
 export function Layout({ patient, mychart, attentionCount = 0 }: { patient?: Patient; mychart?: MyChartConnection; attentionCount?: number }) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const initials = patient?.name.split(' ').map((s) => s[0]).join('') ?? ''
   return (
     <div className="shell">
@@ -63,7 +65,10 @@ export function Layout({ patient, mychart, attentionCount = 0 }: { patient?: Pat
               </div>
             </div>
           )}
-          <p className="demo-flag">Demo · synthetic data</p>
+          <div className="sidebar-foot-row">
+            <p className="demo-flag">Demo · synthetic data</p>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { await signOut(); navigate('/login', { replace: true }) }}>Sign out</button>
+          </div>
         </div>
       </aside>
       <main className="content">
