@@ -18,7 +18,7 @@ export function RecordPage() {
         <PageHeader
           eyebrow="Unified health record"
           title="Connected health records"
-          lede="Connect MyChart once and HERA brings your visits, conditions, medications, labs and referrals from every health system into one record that each new clinician can see."
+          lede="Connect MyChart once to bring every health system into one record."
         />
         <MyChartCard connection={mychart.data} />
       </>
@@ -37,7 +37,7 @@ export function RecordPage() {
       <PageHeader
         eyebrow="Unified health record"
         title="Connected health records"
-        lede="Diagnoses, medications, labs, imaging and visits from every system the patient has authorized, shown in one place. Each item still shows who documented it."
+        lede="Everything from your connected health systems, in one place."
         actions={<DataSourceNote source={source} />}
       />
 

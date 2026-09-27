@@ -34,16 +34,19 @@ export function ResearchConsentCard({ status, busy, onChoose }: {
           <li><Icon name="x" size={15} /> <span><strong>You can turn this off at any time.</strong> Matching stops right away.</span></li>
         </ul>
 
-        <div className="grid grid-2 consent-lists">
-          <div>
-            <div className="why-h">Used for matching (de-identified)</div>
-            <ul>{SHARED.map((s) => <li key={s}>{s}</li>)}</ul>
+        <details className="more">
+          <summary>What's shared and what isn't</summary>
+          <div className="grid grid-2 consent-lists">
+            <div>
+              <div className="why-h">Used for matching (de-identified)</div>
+              <ul>{SHARED.map((s) => <li key={s}>{s}</li>)}</ul>
+            </div>
+            <div>
+              <div className="why-h">Never shared with researchers</div>
+              <ul className="never">{NEVER.map((s) => <li key={s}>{s}</li>)}</ul>
+            </div>
           </div>
-          <div>
-            <div className="why-h">Never shared with researchers</div>
-            <ul className="never">{NEVER.map((s) => <li key={s}>{s}</li>)}</ul>
-          </div>
-        </div>
+        </details>
 
         {status === 'granted' ? (
           <div className="consent-status is-on" role="status">

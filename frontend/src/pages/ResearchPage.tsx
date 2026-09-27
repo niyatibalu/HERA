@@ -32,7 +32,7 @@ export function ResearchPage() {
       <PageHeader
         eyebrow="Research"
         title="Women’s health research, on your terms"
-        lede="Researchers often can’t find the right participants, and eligible women rarely hear about relevant studies. HERA can connect the two without ever exposing who you are."
+        lede="Help women’s health research without ever sharing who you are."
         actions={<DataSourceNote source={consent.source} />}
       />
 
