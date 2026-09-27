@@ -37,12 +37,12 @@ describe('Unified health record', () => {
 
     await user.click(screen.getByRole('button', { name: /^connect mychart$/i }))
     expect(screen.getByText(/lab results/i)).toBeInTheDocument()
-    expect(screen.getByText(/signing in is simulated/i)).toBeInTheDocument()
+    expect(screen.getByText(/read-only: hera can't change anything in mychart/i)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /allow and connect/i }))
 
     expect(await screen.findByRole('heading', { name: /mychart connected/i }, { timeout: 3000 })).toBeInTheDocument()
     expect(screen.getByText(/20 records imported/i)).toBeInTheDocument()
-    expect(screen.getByText(/simulated record connection/i)).toBeInTheDocument()
+    expect(screen.queryByText(/demo|synthetic|fictional/i)).not.toBeInTheDocument()
     for (const section of [/^conditions/i, /^labs/i, /^visits/i, /^medications/i, /^imaging & procedures/i, /^referrals/i, /^care team/i, /record sources/i]) {
       expect(screen.getByRole('heading', { name: section })).toBeInTheDocument()
     }

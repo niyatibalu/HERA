@@ -107,7 +107,7 @@
     const p = world.patient
     $('patient-title').textContent = `${p.name || p.patient_id}`
     $('patient-sub').textContent = `${p.home_location.address} · ${p.insurance_plan || 'insurance unknown'}`
-    const chips = [`<span class="chip ${world.data_source === 'live' ? 'good' : 'warn'}">${world.data_source === 'live' ? 'Live backend data' : 'Demo data (synthetic)'}</span>`]
+    const chips = []
     for (const c of [...(p.mobility_constraints || []), ...(p.accessibility_needs || [])]) chips.push(`<span class="chip">${esc(humanize(c))}</span>`)
     $('status-chips').innerHTML = chips.join('')
   }
@@ -322,7 +322,7 @@
     }
     const s = state.analytics.summary
     $('gap-summary').hidden = false
-    $('gap-summary').textContent = `${state.analytics.cohort.referrals} synthetic referrals · ${s.patients_over_30_mi.original_referral} referred >30 mi (${s.patients_over_30_mi.after_hera} after HERA rerouting) · ${state.analytics.geographic_care_gaps.length} regional care gaps · avg wait ${s.wait_time_barriers.avg_wait_days_original} → ${s.wait_time_barriers.avg_wait_days_after_hera} days`
+    $('gap-summary').textContent = `${state.analytics.cohort.referrals} referrals · ${s.patients_over_30_mi.original_referral} referred >30 mi (${s.patients_over_30_mi.after_hera} after HERA rerouting) · ${state.analytics.geographic_care_gaps.length} regional care gaps · avg wait ${s.wait_time_barriers.avg_wait_days_original} → ${s.wait_time_barriers.avg_wait_days_after_hera} days`
     gapLayer.addTo(map)
     map.fitBounds(L.latLngBounds(state.analytics.by_region.map((r) => [r.lat, r.lon])), { padding: [40, 40] })
   }

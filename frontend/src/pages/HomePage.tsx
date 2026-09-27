@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { DataSourceNote, Loading } from '../components/common'
+import { Loading } from '../components/common'
 import { Icon } from '../components/Icon'
 import { attentionItems, isComplete, journeySteps } from '../lib/journey'
 import { providerLookup } from '../lib/record'
@@ -60,7 +60,6 @@ export function HomePage() {
             {attention.length === 0 ? "You're all caught up." : `${attention.length} ${attention.length === 1 ? 'thing needs' : 'things need'} your attention`}
           </p>
         </div>
-        <DataSourceNote source={record.source} />
       </header>
 
       {priority ? (

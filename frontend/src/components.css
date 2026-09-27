@@ -365,3 +365,9 @@ fieldset.field legend { padding: 0; margin-bottom: 8px; }
 .appointment-confirm .select { max-width: 320px; }
 .btn-danger { background: var(--stalled); color: #fff; }
 .btn-danger:hover { background: #8e2f22; }
+.slot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.slot.is-booked { background: var(--surface-2); border-style: dashed; color: var(--muted); text-decoration: line-through; cursor: not-allowed; }
+.slot.is-booked:hover { border-color: var(--line-strong); }
+.slot-note { font-size: 13px; text-decoration: none; display: inline-block; }
+.slot-day-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.slot-day-open { font-size: 13px; font-weight: 500; color: var(--muted); }

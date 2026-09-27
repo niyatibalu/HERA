@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { Alert, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Alert, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
 import { CareTabs } from '../components/Layout'
 import { journeyAppointmentDate, journeyProviderId } from '../lib/providers'
@@ -28,7 +28,7 @@ export function AppointmentsPage() {
   return (
     <>
       <CareTabs />
-      <PageHeader eyebrow="Appointments" title="Your appointments" lede="See what's coming up, and reschedule or cancel if plans change." actions={<DataSourceNote source={journeys.source} />} />
+      <PageHeader eyebrow="Appointments" title="Your appointments" lede="See what's coming up, and reschedule or cancel if plans change." />
 
       {cancelled && (
         <div style={{ marginBottom: 24 }}>

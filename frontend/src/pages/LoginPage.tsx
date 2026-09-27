@@ -87,10 +87,10 @@ export function LoginPage() {
 
           <div className="demo-account">
             <div>
-              <div className="demo-account-title">Demo account</div>
-              <div className="demo-account-text">Synthetic patient Maya Restrepo · {DEMO_LOGIN.email}</div>
+              <div className="demo-account-title">Maya Restrepo</div>
+              <div className="demo-account-text">{DEMO_LOGIN.email}</div>
             </div>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={useDemo}>Use demo account</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={useDemo}>Use this account</button>
           </div>
         </form>
       </main>

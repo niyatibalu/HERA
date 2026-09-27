@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
-import { Card, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Card, Loading, PageHeader } from '../components/common'
 import { Icon } from '../components/Icon'
 import { ResearchConsentCard, type ConsentView } from '../components/ResearchConsentCard'
 import { StudyMatchCard } from '../components/StudyMatchCard'
@@ -33,7 +33,6 @@ export function ResearchPage() {
         eyebrow="Research"
         title="Women’s health research, on your terms"
         lede="Help women’s health research without ever sharing who you are."
-        actions={<DataSourceNote source={consent.source} />}
       />
 
       <div className="grid grid-main">

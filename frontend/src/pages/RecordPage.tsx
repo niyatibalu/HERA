@@ -1,14 +1,14 @@
 import { api, DEMO_PATIENT_ID } from '../api/client'
 import { useApi } from '../api/useApi'
 import { ConnectedRecordCard, ConnectedSources } from '../components/ConnectedRecordCard'
-import { Alert, DataSourceNote, Loading, PageHeader } from '../components/common'
+import { Loading, PageHeader } from '../components/common'
 import { MyChartCard } from '../components/MyChartCard'
 import { careTeam, conditions, groupEvents, providerLookup } from '../lib/record'
 import { formatDate, humanize, specialtyLabel } from '../lib/format'
 import type { HealthEvent } from '../types'
 
 export function RecordPage() {
-  const { data: r, source } = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
+  const { data: r } = useApi(() => api.getRecord(DEMO_PATIENT_ID), 'record')
   const mychart = useApi(() => api.getMyChart(DEMO_PATIENT_ID), 'mychart')
   if (!r || !mychart.data) return <Loading label="Loading connected records…" />
 
@@ -38,14 +38,10 @@ export function RecordPage() {
         eyebrow="Unified health record"
         title="Connected health records"
         lede="Everything from your connected health systems, in one place."
-        actions={<DataSourceNote source={source} />}
       />
 
       <div className="stack">
         <MyChartCard connection={mychart.data} />
-        <Alert tone="info" title="Simulated record connection">
-          This demo uses a fictional patient and a simulated MyChart connection. HERA does not access any real MyChart or hospital data.
-        </Alert>
       </div>
 
       <div className="grid grid-4 section-gap">

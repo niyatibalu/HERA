@@ -53,6 +53,17 @@ describe('Appointments', () => {
   })
 })
 
+describe('Booked times', () => {
+  it('cannot be picked', async () => {
+    const user = userEvent.setup()
+    renderApp('/access?journey=jr-specialist&show=options')
+    await user.click(await screen.findByRole('button', { name: /choose dr\. ifeoma okafor/i }, { timeout: 3000 }))
+    const booked = await screen.findByRole('radio', { name: 'Tue, Dec 30 at 6:30 PM, booked' })
+    expect(booked).toBeDisabled()
+    expect(within(booked).getByText('Booked')).toBeInTheDocument()
+  })
+})
+
 describe('Pregnancy check on routes', () => {
   it('lists what matters for travel while pregnant, met or not', () => {
     render(

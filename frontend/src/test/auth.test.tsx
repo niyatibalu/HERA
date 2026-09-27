@@ -28,10 +28,10 @@ describe('Sign in', () => {
     expect(currentSession()).toBeNull()
   })
 
-  it('fills the demo account and signs out again', async () => {
+  it('fills Maya’s account and signs out again', async () => {
     const user = userEvent.setup()
     renderApp('/', { signedIn: false })
-    await user.click(await screen.findByRole('button', { name: /use demo account/i }))
+    await user.click(await screen.findByRole('button', { name: /use this account/i }))
     expect(screen.getByLabelText(/email/i)).toHaveValue('maya@example.com')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
     await user.click(await screen.findByRole('button', { name: /sign out/i }))
