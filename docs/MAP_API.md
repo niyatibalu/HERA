@@ -34,7 +34,7 @@ Base URL (local dev): `http://127.0.0.1:8001`. Standard library only, so there's
   otherwise falls back to the demo's rerouted provider `prov-alt-best`.
 - `scenario` selects a demo conditions scenario: `winter_storm` (default) or `clear`.
 - `weights` overrides scoring weights, e.g. `travel_time:0.5,weather:0.1`.
-- `pregnant=1` plans for travel during pregnancy: adds `obstetric_access` (closeness to hospitals with labor & delivery) and `rest_stops` (longest stretch without a place to stop) factors, weighs road condition, weather, isolation and walking more, adds cautions, and returns a `pregnancy` block (general travel tips, nearest labor & delivery hospitals).
+- `pregnant=1` plans for travel during pregnancy: adds `obstetric_access` (closeness to hospitals with labor & delivery) and `rest_stops` (longest stretch without a place to stop) factors, weighs road condition, weather, isolation and walking more, adds cautions, and returns a `pregnancy` block (general travel tips, nearest labor & delivery hospitals). Each option then carries `pregnancy_check: [{label, ok}]` (farthest point from a labor & delivery hospital, longest stretch without a place to stop, icy/unplowed reports, winter-weather exposure, and step-free/walking for transit), and the best option is labeled "Recommended for pregnancy".
 - `date` is "today" (default `2025-12-17`, matching frontend `DEMO_TODAY`). The appointment date is `date + wait_days`.
 
 Errors: unknown patient or provider → `404 {detail}`. Bad scenario, weights or date → `400 {detail}`.

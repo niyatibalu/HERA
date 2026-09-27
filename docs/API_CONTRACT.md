@@ -57,6 +57,7 @@ followup_completed`, plus `stalled` (reachable from any state).
 | GET | `/patients/{id}/mychart` | `MyChartConnection` |
 | POST | `/patients/{id}/mychart/connect` `{scopes?}` | `MyChartConnection` (simulated import from the synthetic record), 400 on unknown scope |
 | POST | `/patients/{id}/mychart/disconnect` | `MyChartConnection` with `status: not_connected` |
+| POST | `/patients/{id}/care-journeys/{journey_id}/cancel-appointment` `{reason?}` | `CareJourney` back at `records_ready` (same provider, appointment cleared, note "Appointment cancelled: …"); 400 if nothing is booked |
 | POST | `/auth/login` `{email, password}` | `{token, email, patient_id, name}`, 401 `{detail: "Email or password is incorrect"}` |
 | GET | `/auth/me` (header `Authorization: Bearer <token>`) | `{email, patient_id, name}`, 401 if missing/expired |
 | POST | `/auth/logout` (bearer token) | 204 |
